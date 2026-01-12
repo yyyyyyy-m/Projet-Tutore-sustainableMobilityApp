@@ -19,7 +19,7 @@
         android:shadowDx="2"
         android:shadowDy="2"
         android:shadowRadius="4"
-        android:text="GREEN GO"
+        android:text="GreenGo"
         android:textColor="@android:color/white"
         android:textSize="32sp"
         android:textStyle="bold"
