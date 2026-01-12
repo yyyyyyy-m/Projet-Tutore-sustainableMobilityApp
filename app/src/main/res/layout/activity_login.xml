@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
     <ImageView
@@ -7,6 +8,43 @@
         android:layout_height="match_parent"
         android:scaleType="centerCrop"
         android:src="@drawable/fondecranaccueil" />
+
+
+    <TextView
+        android:id="@+id/tvTitle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="top|center_horizontal"
+        android:shadowColor="#80000000"
+        android:shadowDx="2"
+        android:shadowDy="2"
+        android:shadowRadius="4"
+        android:text="GREEN GO"
+        android:textColor="@android:color/white"
+        android:textSize="32sp"
+        android:textStyle="bold"
+        tools:layout_editor_absoluteX="119dp"
+        tools:layout_editor_absoluteY="96dp" />
+
+    <Button
+        android:id="@+id/btnConnexion"
+        android:layout_width="331dp"
+        android:layout_height="44dp"
+        android:backgroundTint="@color/lime"
+        android:text="Connexion"
+        android:textColor="@color/black"
+        tools:layout_editor_absoluteX="40dp"
+        tools:layout_editor_absoluteY="506dp" />
+
+    <Button
+        android:id="@+id/btnssConnexion"
+        android:layout_width="334dp"
+        android:layout_height="46dp"
+        android:backgroundTint="@color/lime"
+        android:text="Continuer sans connexion"
+        android:textColor="@color/black"
+        tools:layout_editor_absoluteX="37dp"
+        tools:layout_editor_absoluteY="566dp" />
 
 
 </androidx.constraintlayout.widget.ConstraintLayout>
