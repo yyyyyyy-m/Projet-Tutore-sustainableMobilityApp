@@ -40,4 +40,6 @@ dependencies {
     testImplementation(libs.junit)
     androidTestImplementation(libs.ext.junit)
     androidTestImplementation(libs.espresso.core)
+    implementation("androidx.security:security-crypto:1.1.0-alpha06") // Gerer l'encryptage des mdps
+
 }
