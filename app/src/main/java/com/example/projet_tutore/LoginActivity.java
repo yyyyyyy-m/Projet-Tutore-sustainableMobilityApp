@@ -42,7 +42,6 @@ public class LoginActivity extends AppCompatActivity {
         btnSansConnexion.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                // On ne stocke rien, on change juste d'écran
                 goToHome();
             }
         });
