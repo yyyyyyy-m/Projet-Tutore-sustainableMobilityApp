@@ -23,7 +23,7 @@ public class SessionManager {
                     context,
                     "secure_prefs",
                     masterKey,
-                    EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+                    EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,//SharedPreferences
                     EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM // Nous chiffrons les SharedPreferences afin de protéger le caractère secret des mots de passe
             );
         } catch (GeneralSecurityException | IOException e) {
