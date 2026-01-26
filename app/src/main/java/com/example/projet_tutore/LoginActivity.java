@@ -46,7 +46,7 @@ public class LoginActivity extends AppCompatActivity {
             }
         });
     }
-//kdzsa
+//kdzsaLKk
     private void checkExistingSession() {
         String token = SessionManager.getInstance(this).getAuthToken();
         if (token != null) {
