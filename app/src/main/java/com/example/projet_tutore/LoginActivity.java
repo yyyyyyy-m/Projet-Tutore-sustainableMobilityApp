@@ -53,7 +53,7 @@ public class LoginActivity extends AppCompatActivity {
             // L'utilisateur est déjà venu, on l'envoie direct à l'accueil
             goToHome();
         }
-    }//mxs
+    }//mxslk
 
     private void goToHome() {
         // Remplace HomeActivity par le nom de ton activité principale
