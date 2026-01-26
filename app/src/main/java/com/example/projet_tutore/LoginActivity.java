@@ -51,7 +51,7 @@ public class LoginActivity extends AppCompatActivity {
         String token = SessionManager.getInstance(this).getAuthToken();
         if (token != null) {
             // L'utilisateur est déjà venu, on l'envoie direct à l'accueil
-            goToHome();
+            goToHome();// test
         }
     }//mxslk
 
