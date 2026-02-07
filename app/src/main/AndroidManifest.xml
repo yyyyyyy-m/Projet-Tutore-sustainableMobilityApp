@@ -5,6 +5,8 @@
         <package android:name="com.google.android.apps.maps" />
     </queries>
 
+<uses-permission android:name="android.permission.INTERNET"/>
+
     <meta-data
         android:name="com.google.android.geo.API_KEY"
         android:value="AIzaSyDyN-fqtC_l4ysZirxyhdhxMEtOsKavlqU"/>

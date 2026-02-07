@@ -1,4 +1,7 @@
 package com.example.projet_tutore;
+import android.content.Context;
+import android.location.Address;
+import android.location.Geocoder;
 import android.os.Bundle;
 
 import androidx.annotation.NonNull;
@@ -12,6 +15,10 @@ import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
+
+import java.io.IOException;
+import java.util.List;
+import java.util.Locale;
 
 public class MapsActivity extends AppCompatActivity
         implements OnMapReadyCallback {
@@ -50,5 +57,27 @@ public class MapsActivity extends AppCompatActivity
                 .title("Arrivée"));
 
     }
+
+    public String getAddressFromLatLng(Context context, double lat, double lng) {
+
+        Geocoder geocoder = new Geocoder(context, Locale.getDefault());
+        try {
+            List<Address> addresses =
+                    geocoder.getFromLocation(lat, lng, 1);
+
+            if (addresses != null && !addresses.isEmpty()) {
+                Address address = addresses.get(0);
+
+                return address.getAddressLine(0);
+            }
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        return "Adresse inconnue";
+    }
+
+
 }
 
