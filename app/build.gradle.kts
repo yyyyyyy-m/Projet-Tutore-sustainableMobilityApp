@@ -42,5 +42,7 @@ dependencies {
     androidTestImplementation(libs.ext.junit)
     androidTestImplementation(libs.espresso.core)
     implementation("androidx.security:security-crypto:1.1.0-alpha06") // Gerer l'encryptage des mdps
+    implementation("com.google.android.gms:play-services-maps:18.2.0")
+
 
 }
