@@ -23,9 +23,6 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.Projet_Tutore"
         tools:targetApi="31">
-        <meta-data
-            android:name="com.google.android.geo.API_KEY"
-            android:value="@string/API_googlemaps"/>
         <activity
             android:name=".SplashActivity"
             android:exported="true">
