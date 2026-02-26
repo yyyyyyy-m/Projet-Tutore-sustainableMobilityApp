@@ -39,6 +39,8 @@
 
         <activity android:name=".MapsActivity" />
 
+        <activity android:name=".InscriptionActivity" />
+
     </application>
 
 

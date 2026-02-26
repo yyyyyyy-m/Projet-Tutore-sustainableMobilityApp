@@ -1,10 +1,12 @@
 package com.example.projet_tutore;
 
 import android.content.Intent;
+import android.content.pm.ActivityInfo;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.TextView;
 import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 import com.google.firebase.auth.FirebaseAuth;
@@ -13,8 +15,10 @@ import com.google.firebase.auth.FirebaseUser;
 public class LoginActivity extends AppCompatActivity {
 
     private EditText emailEditText, passwordEditText;
-    private Button loginButton;
+    private Button loginButton, sansConnexion;
     private FirebaseAuth auth;
+
+    private TextView sign;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -24,6 +28,27 @@ public class LoginActivity extends AppCompatActivity {
         emailEditText = findViewById(R.id.etEmail);
         passwordEditText = findViewById(R.id.etPassword);
         loginButton = findViewById(R.id.btnContinue);
+        sign = findViewById(R.id.creer);
+        sansConnexion = findViewById(R.id.btnsansConnexion);
+
+        setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
+
+        sign.setOnClickListener(v -> {
+            Intent intent = new Intent(LoginActivity.this, InscriptionActivity.class);
+            startActivity(intent);
+        });
+
+        sansConnexion.setOnClickListener(v -> {
+            Intent intent = new Intent(LoginActivity.this, MapsActivity.class);
+            startActivity(intent);
+            finish();
+        });
+
+
+        sign.setOnClickListener(v -> {
+            Intent intent = new Intent(LoginActivity.this, InscriptionActivity.class);
+            startActivity(intent);
+        });
 
         loginButton.setOnClickListener(new View.OnClickListener() {
             @Override
