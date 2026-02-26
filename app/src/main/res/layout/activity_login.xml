@@ -2,6 +2,7 @@
 <androidx.constraintlayout.widget.ConstraintLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
@@ -60,7 +61,7 @@
         android:layout_width="0dp"
         android:layout_height="48dp"
         android:layout_marginHorizontal="32dp"
-        android:layout_marginBottom="172dp"
+        android:layout_marginBottom="144dp"
         android:background="@drawable/bg_edittext"
         android:hint="Mot de passe"
         android:inputType="textPassword"
@@ -90,16 +91,31 @@
         android:layout_width="240dp"
         android:layout_height="48dp"
         android:layout_marginHorizontal="32dp"
-        android:layout_marginBottom="32dp"
+        android:layout_marginBottom="60dp"
         android:text="Continuer sans connexion"
         android:textColor="#1B5E20"
         app:backgroundTint="@color/lime"
         app:cornerRadius="24dp"
-        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintBottom_toBottomOf="parent"/>
+        app:layout_constraintHorizontal_bias="0.497"
+        app:layout_constraintStart_toStartOf="parent" />
 
-
+    <TextView
+        android:id="@+id/creer"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="112dp"
+        android:text="Créer un compte ?"
+        android:textColor="#1B5E20"
+        android:textStyle="bold"
+        app:backgroundTint="@color/lime"
+        android:clickable="true"
+        android:focusable="true"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.494"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/etPassword" />
 
 
 </androidx.constraintlayout.widget.ConstraintLayout>
