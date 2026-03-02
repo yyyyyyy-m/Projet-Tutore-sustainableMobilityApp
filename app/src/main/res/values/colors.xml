@@ -3,7 +3,7 @@
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
     <color name="lime">#FBFFC8</color>
-    <color name="green">#AFE9B1</color>         <!-- vert clair pour le fond -->
+    <color name="green">#B9DCBB</color>         <!-- vert clair pour le fond -->
     <color name="vert_fon">#1B5E20</color>    <!-- vert foncé pour le texte -->
 
 </resources>
