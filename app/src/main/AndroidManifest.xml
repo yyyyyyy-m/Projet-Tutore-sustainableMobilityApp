@@ -34,12 +34,17 @@
             android:name=".LoginActivity"
             android:exported="false"/>
         <activity
+            android:name=".InscriptionActivity"
+            android:exported="false"/>
+        <activity
+            android:name=".MainActivity"
+            android:exported="false" />
+        <activity
             android:name=".TrajetActivity"
-            android:exported="true"/>
-
-        <activity android:name=".MapsActivity" />
-
-        <activity android:name=".InscriptionActivity" />
+            android:exported="false"/>
+        <activity
+            android:name=".MapsActivity"
+            android:exported="false"/>
 
     </application>
 
