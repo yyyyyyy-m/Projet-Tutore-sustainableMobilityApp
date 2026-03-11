@@ -39,7 +39,7 @@ public class LoginActivity extends AppCompatActivity {
         });
 
         sansConnexion.setOnClickListener(v -> {
-            Intent intent = new Intent(LoginActivity.this, MapsActivity.class);
+            Intent intent = new Intent(LoginActivity.this, MainActivity.class);
             startActivity(intent);
             finish();
         });
@@ -66,7 +66,7 @@ public class LoginActivity extends AppCompatActivity {
                         .addOnCompleteListener(LoginActivity.this, task -> {
                             if(task.isSuccessful()) {
                                 FirebaseUser user = auth.getCurrentUser();
-                                Intent intent = new Intent(LoginActivity.this, MapsActivity.class);
+                                Intent intent = new Intent(LoginActivity.this, MainActivity.class);
                                 startActivity(intent);
                                 finish();
                             } else {
