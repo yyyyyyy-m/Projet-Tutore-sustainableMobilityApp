@@ -31,6 +31,12 @@ android {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
     }
+
+    packagingOptions {
+        resources {
+            excludes += setOf("META-INF/NOTICE.md", "META-INF/LICENSE.md")
+        }
+    }
 }
 
 dependencies {
@@ -59,5 +65,11 @@ dependencies {
 
     //Firebase
     implementation(platform("com.google.firebase:firebase-bom:34.9.0"))
+
+    // JavaMail pour Android
+    implementation ("com.sun.mail:android-mail:1.6.7")
+    implementation ("com.sun.mail:android-activation:1.6.7")
+
+
 }
 

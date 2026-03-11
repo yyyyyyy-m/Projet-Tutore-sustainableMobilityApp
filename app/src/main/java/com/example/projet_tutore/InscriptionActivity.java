@@ -60,6 +60,11 @@ public class InscriptionActivity extends AppCompatActivity {
         auth.createUserWithEmailAndPassword(email, password)
                 .addOnCompleteListener(this, task -> {
                     if (task.isSuccessful()) {
+                        EmailSender.sendEmail(
+                                email,
+                                "Bienvenue sur GreenGo 👋",
+                                "Merci pour ton inscription ! Vérifie ton compte ici : <lien ici>"
+                        );
                         Toast.makeText(this, "Inscription réussie 🎉", Toast.LENGTH_SHORT).show();
                         startActivity(new Intent(this, LoginActivity.class));
                         finish();
