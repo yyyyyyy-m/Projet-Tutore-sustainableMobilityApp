@@ -1,64 +1,142 @@
 package com.example.projet_tutore;
 
 import android.os.Bundle;
-
 import androidx.fragment.app.Fragment;
-
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
+import android.widget.Button;
+import android.widget.EditText;
+import android.widget.LinearLayout;
+import android.widget.Toast;
+
+import android.text.TextUtils;
+
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+
 /**
  * A simple {@link Fragment} subclass.
- * Use the {@link PartageFragment#newInstance} factory method to
- * create an instance of this fragment.
  */
+
 public class PartageFragment extends Fragment {
 
-    // TODO: Rename parameter arguments, choose names that match
-    // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
-    private static final String ARG_PARAM1 = "param1";
-    private static final String ARG_PARAM2 = "param2";
+    private Button btnSearchMode, btnPublishMode;
+    private Button btnSearchTrip, btnPublishTrip;
+    private LinearLayout layoutSearch, layoutPublish;
 
-    // TODO: Rename and change types of parameters
-    private String mParam1;
-    private String mParam2;
+    private EditText etDepartSearch, etDestinationSearch, etDateSearch, etTimeSearch, etPassengersSearch;
+    private EditText etDepartPublish, etDestinationPublish, etDatePublish, etTimePublish, etPlacesPublish, etPricePublish;
 
     public PartageFragment() {
         // Required empty public constructor
     }
 
-    /**
-     * Use this factory method to create a new instance of
-     * this fragment using the provided parameters.
-     *
-     * @param param1 Parameter 1.
-     * @param param2 Parameter 2.
-     * @return A new instance of fragment PartageFragment.
-     */
-    // TODO: Rename and change types and number of parameters
-    public static PartageFragment newInstance(String param1, String param2) {
-        PartageFragment fragment = new PartageFragment();
-        Bundle args = new Bundle();
-        args.putString(ARG_PARAM1, param1);
-        args.putString(ARG_PARAM2, param2);
-        fragment.setArguments(args);
-        return fragment;
-    }
-
     @Override
-    public void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        if (getArguments() != null) {
-            mParam1 = getArguments().getString(ARG_PARAM1);
-            mParam2 = getArguments().getString(ARG_PARAM2);
-        }
-    }
-
-    @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container,
+    public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
-        // Inflate the layout for this fragment
         return inflater.inflate(R.layout.fragment_partage, container, false);
+    }
+
+    @Override
+    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+
+        initViews(view);
+        setupToggleButtons();
+        setupActions();
+    }
+
+    private void initViews(View view) {
+        btnSearchMode = view.findViewById(R.id.btnSearchMode);
+        btnPublishMode = view.findViewById(R.id.btnPublishMode);
+
+        btnSearchTrip = view.findViewById(R.id.btnSearchTrip);
+        btnPublishTrip = view.findViewById(R.id.btnPublishTrip);
+
+        layoutSearch = view.findViewById(R.id.layoutSearch);
+        layoutPublish = view.findViewById(R.id.layoutPublish);
+
+        etDepartSearch = view.findViewById(R.id.etDepartSearch);
+        etDestinationSearch = view.findViewById(R.id.etDestinationSearch);
+        etDateSearch = view.findViewById(R.id.etDateSearch);
+        etTimeSearch = view.findViewById(R.id.etTimeSearch);
+        etPassengersSearch = view.findViewById(R.id.etPassengersSearch);
+
+        etDepartPublish = view.findViewById(R.id.etDepartPublish);
+        etDestinationPublish = view.findViewById(R.id.etDestinationPublish);
+        etDatePublish = view.findViewById(R.id.etDatePublish);
+        etTimePublish = view.findViewById(R.id.etTimePublish);
+        etPlacesPublish = view.findViewById(R.id.etPlacesPublish);
+        etPricePublish = view.findViewById(R.id.etPricePublish);
+    }
+
+    private void setupToggleButtons() {
+        btnSearchMode.setOnClickListener(v -> showSearchMode());
+        btnPublishMode.setOnClickListener(v -> showPublishMode());
+    }
+
+    private void showSearchMode() {
+        layoutSearch.setVisibility(View.VISIBLE);
+        layoutPublish.setVisibility(View.GONE);
+
+        btnSearchMode.setBackgroundColor(getResources().getColor(android.R.color.white));
+        btnSearchMode.setTextColor(getResources().getColor(android.R.color.black));
+
+        btnPublishMode.setBackgroundColor(0xFFF3F4F6);
+        btnPublishMode.setTextColor(0xFF6B7280);
+    }
+
+    private void showPublishMode() {
+        layoutSearch.setVisibility(View.GONE);
+        layoutPublish.setVisibility(View.VISIBLE);
+
+        btnPublishMode.setBackgroundColor(getResources().getColor(android.R.color.white));
+        btnPublishMode.setTextColor(getResources().getColor(android.R.color.black));
+
+        btnSearchMode.setBackgroundColor(0xFFF3F4F6);
+        btnSearchMode.setTextColor(0xFF6B7280);
+    }
+
+    private void setupActions() {
+        btnSearchTrip.setOnClickListener(v -> {
+            String depart = etDepartSearch.getText().toString().trim();
+            String destination = etDestinationSearch.getText().toString().trim();
+            String date = etDateSearch.getText().toString().trim();
+            String time = etTimeSearch.getText().toString().trim();
+            String passengers = etPassengersSearch.getText().toString().trim();
+
+            if (TextUtils.isEmpty(depart) || TextUtils.isEmpty(destination)
+                    || TextUtils.isEmpty(date) || TextUtils.isEmpty(time)
+                    || TextUtils.isEmpty(passengers)) {
+                Toast.makeText(requireContext(), "Veuillez remplir tous les champs", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            Toast.makeText(requireContext(), "Recherche lancée", Toast.LENGTH_SHORT).show();
+
+            // 下一步这里会跳转到 ResultatActivity
+            // Intent intent = new Intent(requireContext(), ResultatCovoiturageActivity.class);
+            // startActivity(intent);
+        });
+
+        btnPublishTrip.setOnClickListener(v -> {
+            String depart = etDepartPublish.getText().toString().trim();
+            String destination = etDestinationPublish.getText().toString().trim();
+            String date = etDatePublish.getText().toString().trim();
+            String time = etTimePublish.getText().toString().trim();
+            String places = etPlacesPublish.getText().toString().trim();
+            String price = etPricePublish.getText().toString().trim();
+
+            if (TextUtils.isEmpty(depart) || TextUtils.isEmpty(destination)
+                    || TextUtils.isEmpty(date) || TextUtils.isEmpty(time)
+                    || TextUtils.isEmpty(places) || TextUtils.isEmpty(price)) {
+                Toast.makeText(requireContext(), "Veuillez remplir tous les champs", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            Toast.makeText(requireContext(), "Trajet publié avec succès", Toast.LENGTH_SHORT).show();
+        });
     }
 }
