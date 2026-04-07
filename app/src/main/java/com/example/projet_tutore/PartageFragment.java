@@ -16,9 +16,6 @@ import android.text.TextUtils;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
-/**
- * A simple {@link Fragment} subclass.
- */
 
 public class PartageFragment extends Fragment {
 
@@ -116,7 +113,7 @@ public class PartageFragment extends Fragment {
 
             Toast.makeText(requireContext(), "Recherche lancée", Toast.LENGTH_SHORT).show();
 
-            // 下一步这里会跳转到 ResultatActivity
+            // sauter vers ResultatActivity
             // Intent intent = new Intent(requireContext(), ResultatCovoiturageActivity.class);
             // startActivity(intent);
         });
