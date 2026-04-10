@@ -27,7 +27,7 @@ public class PartageFragment extends Fragment {
     private EditText etDepartPublish, etDestinationPublish, etDatePublish, etTimePublish, etPlacesPublish, etPricePublish;
 
     public PartageFragment() {
-        // Required empty public constructor
+        // il permet android de reconstruire lui-meme le fragement
     }
 
     @Override
@@ -74,26 +74,31 @@ public class PartageFragment extends Fragment {
         btnPublishMode.setOnClickListener(v -> showPublishMode());
     }
 
+    private static final int COLOR_SELECTED_BG = 0xFFB9DCBB;   // vert
+    private static final int COLOR_UNSELECTED_BG = 0xFFF3F4F6; // gris
+    private static final int COLOR_SELECTED_TEXT = 0xFF1E1E1E;
+    private static final int COLOR_UNSELECTED_TEXT = 0xFF6B7280;
+
     private void showSearchMode() {
         layoutSearch.setVisibility(View.VISIBLE);
         layoutPublish.setVisibility(View.GONE);
 
-        btnSearchMode.setBackgroundColor(getResources().getColor(android.R.color.white));
-        btnSearchMode.setTextColor(getResources().getColor(android.R.color.black));
+        btnSearchMode.setBackgroundTintList(android.content.res.ColorStateList.valueOf(COLOR_SELECTED_BG));
+        btnSearchMode.setTextColor(COLOR_SELECTED_TEXT);
 
-        btnPublishMode.setBackgroundColor(0xFFF3F4F6);
-        btnPublishMode.setTextColor(0xFF6B7280);
+        btnPublishMode.setBackgroundTintList(android.content.res.ColorStateList.valueOf(COLOR_UNSELECTED_BG));
+        btnPublishMode.setTextColor(COLOR_UNSELECTED_TEXT);
     }
 
     private void showPublishMode() {
         layoutSearch.setVisibility(View.GONE);
         layoutPublish.setVisibility(View.VISIBLE);
 
-        btnPublishMode.setBackgroundColor(getResources().getColor(android.R.color.white));
-        btnPublishMode.setTextColor(getResources().getColor(android.R.color.black));
+        btnPublishMode.setBackgroundTintList(android.content.res.ColorStateList.valueOf(COLOR_SELECTED_BG));
+        btnPublishMode.setTextColor(COLOR_SELECTED_TEXT);
 
-        btnSearchMode.setBackgroundColor(0xFFF3F4F6);
-        btnSearchMode.setTextColor(0xFF6B7280);
+        btnSearchMode.setBackgroundTintList(android.content.res.ColorStateList.valueOf(COLOR_UNSELECTED_BG));
+        btnSearchMode.setTextColor(COLOR_UNSELECTED_TEXT);
     }
 
     private void setupActions() {

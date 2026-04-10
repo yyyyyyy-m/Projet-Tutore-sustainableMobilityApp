@@ -28,7 +28,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="4dp"
             android:text="Cherchez les conducteurs sur votre itinéraire"
-            android:textSize="15dp"
+            android:textSize="15sp"
             android:textColor="#8A8A8A" />
 
         <LinearLayout
@@ -43,14 +43,13 @@
             <Button
                 android:id="@+id/btnSearchMode"
                 android:layout_width="0dp"
-                android:layout_height="48dp"
+                android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:backgroundTint="#69C76B"
+                android:backgroundTint="#B9DCBB"
                 android:text="Rechercher un trajet"
                 android:textAllCaps="false"
-                android:textSize="13sp"
                 android:textColor="#1E1E1E"
-                android:background="@android:color/white" />
+                android:textSize="13sp"/>
 
             <Button
                 android:id="@+id/btnPublishMode"
@@ -58,14 +57,14 @@
                 android:layout_height="48dp"
                 android:layout_weight="1"
                 android:layout_marginStart="8dp"
+                android:backgroundTint ="#F3F4F6"
                 android:text="Proposer un trajet"
                 android:textAllCaps="false"
                 android:textSize="13sp"
-                android:textColor="#6B7280"
-                android:background="#F3F4F6" />
+                android:textColor="#6B7280"/>
         </LinearLayout>
 
-        <!-- SEARCH LAYOUT -->
+        <!-- chercher un trajet -->
         <LinearLayout
             android:id="@+id/layoutSearch"
             android:layout_width="match_parent"
@@ -148,7 +147,7 @@
                 android:textSize="16sp" />
         </LinearLayout>
 
-        <!-- PUBLISH LAYOUT -->
+        <!-- proposer un trajet -->
         <LinearLayout
             android:id="@+id/layoutPublish"
             android:layout_width="match_parent"

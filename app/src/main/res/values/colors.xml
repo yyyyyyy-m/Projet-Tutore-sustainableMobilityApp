@@ -5,5 +5,6 @@
     <color name="lime">#FBFFC8</color>
     <color name="green">#B9DCBB</color>         <!-- vert clair pour le fond -->
     <color name="vert_fon">#1B5E20</color>    <!-- vert foncé pour le texte -->
+    <color name="gris">#C7BABA</color>>
 
 </resources>
