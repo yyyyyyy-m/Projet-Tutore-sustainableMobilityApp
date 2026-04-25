@@ -22,80 +22,209 @@
         android:textColor="@android:color/black"
         android:layout_gravity="top|end"/>
 
-
     <!-- Bottom Sheet -->
     <com.google.android.material.card.MaterialCardView
         android:id="@+id/bottomSheet"
         android:layout_width="match_parent"
-        android:layout_height="350dp"
+        android:layout_height="500dp"
         android:layout_gravity="bottom"
         app:cardCornerRadius="30dp"
         app:cardElevation="8dp"
         android:backgroundTint="#8ED38A"
         app:layout_behavior="com.google.android.material.bottomsheet.BottomSheetBehavior">
 
-        <LinearLayout
+        <ScrollView
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:orientation="vertical"
-            android:padding="16dp">
+            android:layout_height="match_parent">
 
-            <!-- Barre de recherche -->
-            <com.google.android.material.textfield.TextInputLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                app:boxBackgroundMode="filled"
-                app:boxCornerRadiusTopStart="20dp"
-                app:boxCornerRadiusTopEnd="20dp"
-                app:boxCornerRadiusBottomStart="20dp"
-                app:boxCornerRadiusBottomEnd="20dp">
-
-                <com.google.android.material.textfield.TextInputEditText
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:hint="Rechercher un trajet ? Tapez ici"
-                    android:padding="12dp"/>
-
-            </com.google.android.material.textfield.TextInputLayout>
-
-            <!-- Titre -->
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Transports à proximité"
-                android:textStyle="bold"
-                android:layout_marginTop="16dp"
-                android:textColor="@android:color/white"/>
-
-            <!-- Item transport -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:background="@android:color/white"
-                android:padding="12dp"
-                android:layout_marginTop="8dp"
-                android:orientation="horizontal">
+                android:orientation="vertical"
+                android:padding="16dp">
 
+                <!-- Section Calcul d'Itinéraire -->
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="BUS"
+                    android:text="Calculer votre trajet"
                     android:textStyle="bold"
-                    android:background="#D0E8FF"
-                    android:padding="8dp"
-                    android:layout_marginEnd="12dp"/>
+                    android:textSize="16sp"
+                    android:textColor="@android:color/white"
+                    android:layout_marginBottom="12dp"/>
 
+                <!-- Point de départ avec AutoCompleteTextView -->
+                <com.google.android.material.textfield.TextInputLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    app:boxBackgroundMode="filled"
+                    app:boxBackgroundColor="@android:color/white"
+                    app:boxCornerRadiusTopStart="15dp"
+                    app:boxCornerRadiusTopEnd="15dp"
+                    app:boxCornerRadiusBottomStart="15dp"
+                    app:boxCornerRadiusBottomEnd="15dp"
+                    app:startIconDrawable="@android:drawable/ic_menu_mylocation"
+                    android:layout_marginBottom="8dp">
 
+                    <AutoCompleteTextView
+                        android:id="@+id/etDepart"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:hint="Point de départ"
+                        android:padding="12dp"
+                        android:completionThreshold="3"/>
+
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <!-- Point d'arrivée avec AutoCompleteTextView -->
+                <com.google.android.material.textfield.TextInputLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    app:boxBackgroundMode="filled"
+                    app:boxBackgroundColor="@android:color/white"
+                    app:boxCornerRadiusTopStart="15dp"
+                    app:boxCornerRadiusTopEnd="15dp"
+                    app:boxCornerRadiusBottomStart="15dp"
+                    app:boxCornerRadiusBottomEnd="15dp"
+                    app:startIconDrawable="@android:drawable/ic_menu_mapmode"
+                    android:layout_marginBottom="12dp">
+
+                    <AutoCompleteTextView
+                        android:id="@+id/etArrivee"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:hint="Destination"
+                        android:padding="12dp"
+                        android:completionThreshold="3"/>
+
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <!-- Boutons modes de transport -->
                 <LinearLayout
-                    android:orientation="vertical"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content">
-                    
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center"
+                    android:layout_marginBottom="12dp">
+
+                    <ImageButton
+                        android:id="@+id/btnModeBus"
+                        android:layout_width="50dp"
+                        android:layout_height="50dp"
+                        android:layout_margin="4dp"
+                        android:background="@android:color/white"
+                        android:src="@android:drawable/ic_menu_directions"
+                        android:contentDescription="Bus"/>
+
+                    <ImageButton
+                        android:id="@+id/btnModeMarche"
+                        android:layout_width="50dp"
+                        android:layout_height="50dp"
+                        android:layout_margin="4dp"
+                        android:background="@android:color/white"
+                        android:src="@android:drawable/ic_menu_directions"
+                        android:contentDescription="Marche"/>
+
+                    <ImageButton
+                        android:id="@+id/btnModeVelo"
+                        android:layout_width="50dp"
+                        android:layout_height="50dp"
+                        android:layout_margin="4dp"
+                        android:background="@android:color/white"
+                        android:src="@android:drawable/ic_menu_directions"
+                        android:contentDescription="Vélo"/>
+
                 </LinearLayout>
+
+                <!-- Bouton Calculer -->
+                <Button
+                    android:id="@+id/btnCalculerTrajet"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Calculer l'itinéraire"
+                    android:backgroundTint="@android:color/white"
+                    android:textColor="#8ED38A"
+                    android:textStyle="bold"
+                    android:padding="12dp"
+                    android:layout_marginBottom="16dp"/>
+
+                <!-- Divider -->
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:background="@android:color/white"
+                    android:alpha="0.3"
+                    android:layout_marginVertical="12dp"/>
+
+                <!-- Section Informations de trajet -->
+                <LinearLayout
+                    android:id="@+id/layoutInfoTrajet"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:visibility="gone"
+                    android:background="@android:color/white"
+                    android:padding="12dp"
+                    android:layout_marginBottom="16dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Informations du trajet"
+                        android:textStyle="bold"
+                        android:textSize="14sp"
+                        android:textColor="#8ED38A"
+                        android:layout_marginBottom="8dp"/>
+
+                    <TextView
+                        android:id="@+id/tvDuree"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Durée: --"
+                        android:textSize="12sp"
+                        android:layout_marginBottom="4dp"/>
+
+                    <TextView
+                        android:id="@+id/tvDistance"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Distance: --"
+                        android:textSize="12sp"
+                        android:layout_marginBottom="8dp"/>
+
+                    <!-- Liste des correspondances -->
+                    <TextView
+                        android:id="@+id/tvCorrespondancesTitle"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Correspondances:"
+                        android:textStyle="bold"
+                        android:textSize="13sp"
+                        android:visibility="gone"
+                        android:layout_marginTop="4dp"
+                        android:layout_marginBottom="4dp"/>
+
+                    <androidx.recyclerview.widget.RecyclerView
+                        android:id="@+id/rvCorrespondances"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:visibility="gone"/>
+
+                </LinearLayout>
+
+                <!-- Titre -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Transports à proximité"
+                    android:textStyle="bold"
+                    android:textSize="16sp"
+                    android:textColor="@android:color/white"
+                    android:layout_marginBottom="8dp"/>
 
             </LinearLayout>
 
-        </LinearLayout>
+        </ScrollView>
 
     </com.google.android.material.card.MaterialCardView>
 
