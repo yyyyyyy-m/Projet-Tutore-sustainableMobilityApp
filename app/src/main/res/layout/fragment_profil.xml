@@ -1,30 +1,334 @@
 <?xml version="1.0" encoding="utf-8"?>
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="#F5F5F5"
     tools:context=".ProfilFragment">
 
-    <!-- TODO: Update blank fragment layout -->
-
-    <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:orientation="vertical"
-        android:gravity="center">
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
 
-        <TextView
-            android:layout_width="wrap_content"
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:layout_width="match_parent"
+            android:layout_height="240dp"
+            android:background="@drawable/header_curve_vert">
+
+            <!-- Titre Profil -->
+            <TextView
+                android:id="@+id/title_profile"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Profil"
+                android:textColor="@android:color/white"
+                android:textSize="20sp"
+                android:textStyle="bold"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent"
+                android:layout_marginStart="24dp"
+                android:layout_marginTop="20dp"/>
+
+            <!-- Photo de profil -->
+            <ImageView
+                android:id="@+id/iv_profile_pic"
+                android:layout_width="80dp"
+                android:layout_height="80dp"
+                android:background="@drawable/cercle_blanc"
+                android:padding="20dp"
+                android:src="@drawable/ic_profile"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/title_profile"
+                android:layout_marginStart="24dp"
+                android:layout_marginTop="8dp"/>
+
+            <!-- Nom utilisateur -->
+            <TextView
+                android:id="@+id/tv_username"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Dimitri Marcelle"
+                android:textColor="@android:color/white"
+                android:textSize="19sp"
+                android:textStyle="bold"
+                app:layout_constraintStart_toEndOf="@id/iv_profile_pic"
+                app:layout_constraintTop_toTopOf="@id/iv_profile_pic"
+                app:layout_constraintBottom_toBottomOf="@id/iv_profile_pic"
+                android:layout_marginStart="12dp"/>
+
+            <!-- Email utilisateur -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="dimitri@example.com"
+                android:textColor="@android:color/white"
+                android:textSize="13sp"
+                android:alpha="0.9"
+                app:layout_constraintStart_toStartOf="@id/tv_username"
+                app:layout_constraintTop_toBottomOf="@id/tv_username"
+                android:layout_marginTop="4dp"/>
+
+        </androidx.constraintlayout.widget.ConstraintLayout>
+
+
+        <LinearLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="@string/hello_blank_fragment" />
+            android:orientation="horizontal"
+            android:background="@drawable/card_white"
+            android:layout_marginHorizontal="16dp"
+            android:layout_marginTop="-30dp"
+            android:elevation="4dp"
+            android:paddingVertical="20dp"
+            android:paddingHorizontal="16dp">
 
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical"
+                android:gravity="center">
+
+                <ImageView
+                    android:layout_width="50dp"
+                    android:layout_height="50dp"
+                    android:background="@drawable/circle_light_green"
+                    android:src="@drawable/feuille"
+                    android:padding="14dp"/>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="8.6 kg"
+                    android:textSize="20sp"
+                    android:textStyle="bold"
+                    android:layout_marginTop="6dp"/>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="CO₂ économisé"
+                    android:textSize="13sp"
+                    android:alpha="0.6"
+                    android:layout_marginTop="4dp"/>
+
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical"
+                android:gravity="center">
+
+                <ImageView
+                    android:layout_width="50dp"
+                    android:layout_height="50dp"
+                    android:background="@drawable/circle_yellow"
+                    android:src="@drawable/badge"
+                    android:padding="14dp"/>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="1,250"
+                    android:textSize="20sp"
+                    android:textStyle="bold"
+                    android:layout_marginTop="6dp"/>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Points verts"
+                    android:textSize="13sp"
+                    android:alpha="0.6"
+                    android:layout_marginTop="4dp"/>
+
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical"
+                android:gravity="center">
+
+                <ImageView
+                    android:layout_width="50dp"
+                    android:layout_height="50dp"
+                    android:background="@drawable/circle_light_green"
+                    android:src="@drawable/voiture"
+                    android:padding="14dp"/>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="24"
+                    android:textSize="20sp"
+                    android:textStyle="bold"
+                    android:layout_marginTop="6dp"/>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Trajets"
+                    android:textSize="13sp"
+                    android:alpha="0.6"
+                    android:layout_marginTop="4dp"/>
+
+            </LinearLayout>
+
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:background="@drawable/card_white"
+            android:layout_marginHorizontal="16dp"
+            android:layout_marginTop="16dp"
+            android:paddingVertical="16dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Compte"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:layout_marginStart="16dp"
+                android:layout_marginBottom="12dp"/>
+
+            <!-- Paramètres généraux -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:paddingVertical="14dp"
+                android:paddingHorizontal="16dp">
+
+                <ImageView
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:background="@drawable/circle_light_gray"
+                    android:src="@drawable/parametres"
+                    android:padding="10dp"/>
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Paramètres généraux"
+                    android:textSize="17sp"
+                    android:layout_marginStart="16dp"
+                    android:layout_gravity="center_vertical"/>
+
+                <ImageView
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:src="@drawable/fleche"
+                    android:layout_gravity="center_vertical"/>
+
+            </LinearLayout>
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:background="#EEEEEE"
+                android:layout_marginHorizontal="16dp"/>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:paddingVertical="14dp"
+                android:paddingHorizontal="16dp">
+
+                <ImageView
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:background="@drawable/circle_light_gray"
+                    android:src="@drawable/ic_profile"
+                    android:padding="10dp"/>
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Mes informations"
+                    android:textSize="17sp"
+                    android:layout_marginStart="16dp"
+                    android:layout_gravity="center_vertical"/>
+
+                <ImageView
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:src="@drawable/fleche"
+                    android:layout_gravity="center_vertical"/>
+
+            </LinearLayout>
+
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:background="@drawable/card_white"
+            android:layout_marginHorizontal="16dp"
+            android:layout_marginTop="16dp"
+            android:paddingVertical="16dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Activité"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:layout_marginStart="16dp"
+                android:layout_marginBottom="12dp"/>
+
+            <!-- Mes trajets -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:paddingVertical="14dp"
+                android:paddingHorizontal="16dp">
+
+                <ImageView
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:background="@drawable/circle_light_green"
+                    android:src="@drawable/voiture"
+                    android:padding="10dp"/>
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Mes trajets"
+                    android:textSize="17sp"
+                    android:layout_marginStart="16dp"
+                    android:layout_gravity="center_vertical"/>
+
+            </LinearLayout>
+
+        </LinearLayout>
+
+        <!-- BOUTON DECONNECTER -->
         <Button
             android:id="@+id/logout"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Déconnecter" />
+            android:layout_width="match_parent"
+            android:layout_height="52dp"
+            android:text="Déconnecter"
+            android:textColor="@android:color/white"
+            android:textSize="17sp"
+            android:background="@drawable/bouton_vert"
+            android:layout_marginHorizontal="16dp"
+            android:layout_marginVertical="16dp"/>
 
     </LinearLayout>
 
-</FrameLayout>
+</ScrollView>

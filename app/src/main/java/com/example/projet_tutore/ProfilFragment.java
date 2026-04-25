@@ -31,6 +31,7 @@ public class ProfilFragment extends Fragment {
         mAuth = FirebaseAuth.getInstance();
 
         // Récupérer le bouton
+
         logout = view.findViewById(R.id.logout);
 
         // Action quand on clique sur logout
@@ -49,5 +50,9 @@ public class ProfilFragment extends Fragment {
         });
 
         return view;
+
     }
+
+
 }
+
