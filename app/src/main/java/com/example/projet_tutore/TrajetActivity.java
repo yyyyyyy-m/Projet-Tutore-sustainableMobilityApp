@@ -28,37 +28,43 @@ public class TrajetActivity extends AppCompatActivity implements OnMapReadyCallb
     private static final int LOCATION_PERMISSION_REQUEST = 1;
     private BottomSheetBehavior<View> behavior;
     private Button btnConnexion;
+    private Button btnOpenSearch; // Ajoute ceci
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_trajet);
 
-        // Initialisation des vues
+        // 1. Initialisation des boutons
         btnConnexion = findViewById(R.id.btnConnexion);
+        btnOpenSearch = findViewById(R.id.btnOpenSearch); // Maintenant il sera trouvé
+
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
 
-        // Configuration du Bottom Sheet
+        // 2. Configuration du Bottom Sheet
         View bottomSheet = findViewById(R.id.bottomSheet);
         if (bottomSheet != null) {
             behavior = BottomSheetBehavior.from(bottomSheet);
-            behavior.setPeekHeight(150);
+            behavior.setPeekHeight(200); // Augmenté pour être plus visible
             behavior.setState(BottomSheetBehavior.STATE_COLLAPSED);
         }
 
-        // Configuration du bouton Connexion
-        btnConnexion.setOnClickListener(v -> {
-            Toast.makeText(this, "Fonctionnalité de connexion à implémenter", Toast.LENGTH_SHORT).show();
+        // 3. Actions des boutons
+        btnOpenSearch.setOnClickListener(v -> {
+            if (behavior != null) {
+                behavior.setState(BottomSheetBehavior.STATE_EXPANDED);
+            }
         });
 
-        // Initialisation de la carte
+        btnConnexion.setOnClickListener(v -> {
+            Toast.makeText(this, "Connexion...", Toast.LENGTH_SHORT).show();
+        });
+
+        // 4. Carte
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.map);
-
         if (mapFragment != null) {
             mapFragment.getMapAsync(this);
-        } else {
-            Toast.makeText(this, "Erreur: Fragment carte non trouvé", Toast.LENGTH_SHORT).show();
         }
     }
 

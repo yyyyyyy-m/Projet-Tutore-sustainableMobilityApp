@@ -11,16 +11,32 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
 
-    <!-- Bouton Connexion -->
-    <Button
-        android:id="@+id/btnConnexion"
+    <LinearLayout
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Connexion"
+        android:orientation="horizontal"
         android:layout_margin="16dp"
+        android:layout_marginTop="40dp"
+        android:layout_gravity="top|end"
+        android:elevation="10dp"
+        android:translationZ="10dp"> <Button
+        android:id="@+id/btnOpenSearch"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Rechercher"
+        android:layout_marginEnd="8dp"
         android:backgroundTint="#B8E6C1"
-        android:textColor="@android:color/black"
-        android:layout_gravity="top|end"/>
+        android:textColor="@android:color/black" />
+
+        <Button
+            android:id="@+id/btnConnexion"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Connexion"
+            android:backgroundTint="#B8E6C1"
+            android:textColor="@android:color/black" />
+
+    </LinearLayout>
 
     <!-- Bottom Sheet -->
     <com.google.android.material.card.MaterialCardView

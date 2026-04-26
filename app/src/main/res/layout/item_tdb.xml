@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:padding="8dp"
+    android:background="@android:color/white"
+    android:layout_marginBottom="8dp">
+
+    <!-- Badge ligne de transport -->
+    <TextView
+        android:id="@+id/tvLigneBadge"
+        android:layout_width="60dp"
+        android:layout_height="40dp"
+        android:gravity="center"
+        android:textStyle="bold"
+        android:textColor="@android:color/white"
+        android:textSize="14sp"
+        android:layout_marginEnd="12dp"/>
+
+    <!-- Informations du trajet -->
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/tvDirection"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textStyle="bold"
+            android:textSize="13sp"
+            android:textColor="@android:color/black"/>
+
+        <TextView
+            android:id="@+id/tvStops"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textSize="11sp"
+            android:textColor="@android:color/darker_gray"/>
+
+        <TextView
+            android:id="@+id/tvDepartArrivee"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textSize="11sp"
+            android:textColor="@android:color/darker_gray"
+            android:layout_marginTop="2dp"/>
+
+    </LinearLayout>
+
+    <!-- Durée -->
+    <TextView
+        android:id="@+id/tvDureeSegment"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textStyle="bold"
+        android:textSize="12sp"
+        android:layout_gravity="center_vertical"
+        android:textColor="#8ED38A"/>
+
+</LinearLayout>
