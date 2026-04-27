@@ -35,6 +35,7 @@ public class CarteFragment extends Fragment implements OnMapReadyCallback {
     private static final int LOCATION_PERMISSION_REQUEST = 1;
 
     private BottomSheetBehavior<View> behavior;
+    private Button btnOpenSearch;
     private Button btnConnexion;
 
     public CarteFragment() {}
@@ -53,6 +54,7 @@ public class CarteFragment extends Fragment implements OnMapReadyCallback {
 
         // Initialisation des vues
         btnConnexion = v.findViewById(R.id.btnConnexion);
+        btnOpenSearch = v.findViewById(R.id.btnOpenSearch);
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(requireActivity());
 
         // Configuration du Bottom Sheet
@@ -68,6 +70,10 @@ public class CarteFragment extends Fragment implements OnMapReadyCallback {
                 Toast.makeText(requireContext(),
                         "Fonctionnalité de connexion à implémenter",
                         Toast.LENGTH_SHORT).show());
+        btnOpenSearch.setOnClickListener(ve -> {
+            behavior.setState(BottomSheetBehavior.STATE_HALF_EXPANDED);
+        });
+
 
         // Initialisation de la carte (IMPORTANT: getChildFragmentManager)
         SupportMapFragment mapFragment =
