@@ -2,13 +2,13 @@ package com.example.projet_tutore;
 
 import android.Manifest;
 import android.content.pm.PackageManager;
+import android.graphics.Color;
+import android.location.Address;
+import android.location.Geocoder;
 import android.location.Location;
 import android.os.Bundle;
-import android.view.LayoutInflater;
-import android.view.View;
-import android.view.ViewGroup;
-import android.widget.Button;
-import android.widget.Toast;
+import android.view.*;
+import android.widget.*;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -16,29 +16,33 @@ import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 
-import com.example.projet_tutore.R;
-import com.google.android.gms.location.FusedLocationProviderClient;
-import com.google.android.gms.location.LocationServices;
-import com.google.android.gms.maps.CameraUpdateFactory;
-import com.google.android.gms.maps.GoogleMap;
-import com.google.android.gms.maps.OnMapReadyCallback;
-import com.google.android.gms.maps.SupportMapFragment;
-import com.google.android.gms.maps.model.LatLng;
-import com.google.android.gms.maps.model.MarkerOptions;
+import com.google.android.gms.location.*;
+import com.google.android.gms.maps.*;
+import com.google.android.gms.maps.model.*;
 import com.google.android.material.bottomsheet.BottomSheetBehavior;
+
+import org.json.JSONArray;
+import org.json.JSONObject;
+
+import java.io.*;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.util.*;
 
 public class CarteFragment extends Fragment implements OnMapReadyCallback {
 
     private GoogleMap mMap;
     private FusedLocationProviderClient fusedLocationClient;
 
+    private BottomSheetBehavior<View> behavior;
+
+    private Button btnOpenSearch, btnConnexion, btnCalculer;
+    private EditText etDepart, etArrivee;
+
     private static final int LOCATION_PERMISSION_REQUEST = 1;
 
-    private BottomSheetBehavior<View> behavior;
-    private Button btnOpenSearch;
-    private Button btnConnexion;
-
-    public CarteFragment() {}
+    // ⚠️ METS TA VRAIE CLÉ GOOGLE API
+    private final String API_KEY = "TA_CLE_API";
 
     @Nullable
     @Override
@@ -52,70 +56,60 @@ public class CarteFragment extends Fragment implements OnMapReadyCallback {
     public void onViewCreated(@NonNull View v, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(v, savedInstanceState);
 
-        // Initialisation des vues
+        // INIT
         btnConnexion = v.findViewById(R.id.btnConnexion);
         btnOpenSearch = v.findViewById(R.id.btnOpenSearch);
+        btnCalculer = v.findViewById(R.id.btnCalculerTrajet);
+        etDepart = v.findViewById(R.id.etDepart);
+        etArrivee = v.findViewById(R.id.etArrivee);
+
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(requireActivity());
 
-        // Configuration du Bottom Sheet
+        // BOTTOM SHEET
         View bottomSheet = v.findViewById(R.id.bottomSheet);
+
         if (bottomSheet != null) {
             behavior = BottomSheetBehavior.from(bottomSheet);
+
             behavior.setPeekHeight(150);
+            behavior.setFitToContents(true);
             behavior.setState(BottomSheetBehavior.STATE_COLLAPSED);
         }
 
-        // Bouton Connexion (pour l'instant toast)
-        btnConnexion.setOnClickListener(view ->
-                Toast.makeText(requireContext(),
-                        "Fonctionnalité de connexion à implémenter",
-                        Toast.LENGTH_SHORT).show());
-        btnOpenSearch.setOnClickListener(ve -> {
-            behavior.setState(BottomSheetBehavior.STATE_HALF_EXPANDED);
+        // 🔍 RECHERCHER
+        btnOpenSearch.setOnClickListener(view -> {
+            Toast.makeText(requireContext(), "Recherche ouverte", Toast.LENGTH_SHORT).show();
+            behavior.setState(BottomSheetBehavior.STATE_EXPANDED);
         });
 
+        // 🔐 CONNEXION
+        btnConnexion.setOnClickListener(view -> {
+            Toast.makeText(requireContext(), "Connexion cliquée", Toast.LENGTH_SHORT).show();
+            behavior.setState(BottomSheetBehavior.STATE_EXPANDED);
+        });
 
-        // Initialisation de la carte (IMPORTANT: getChildFragmentManager)
+        // 🚀 CALCUL TRAJET
+        btnCalculer.setOnClickListener(view -> calculerTrajet());
+
+        // MAP
         SupportMapFragment mapFragment =
                 (SupportMapFragment) getChildFragmentManager().findFragmentById(R.id.map);
 
         if (mapFragment != null) {
             mapFragment.getMapAsync(this);
-        } else {
-            Toast.makeText(requireContext(),
-                    "Erreur: Fragment carte non trouvé",
-                    Toast.LENGTH_SHORT).show();
         }
     }
+
+    // ================= MAP =================
 
     @Override
     public void onMapReady(@NonNull GoogleMap googleMap) {
         mMap = googleMap;
 
-        try {
-            // Activer les contrôles de zoom
-            mMap.getUiSettings().setZoomControlsEnabled(true);
-            mMap.getUiSettings().setCompassEnabled(true);
-            mMap.getUiSettings().setMapToolbarEnabled(true);
+        LatLng tunis = new LatLng(36.8065, 10.1815);
+        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(tunis, 12f));
 
-            // Position par défaut (Tunis)
-            LatLng defaultLocation = new LatLng(36.8065, 10.1815);
-            mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(defaultLocation, 12f));
-
-            mMap.addMarker(new MarkerOptions()
-                    .position(defaultLocation)
-                    .title("Tunis")
-                    .snippet("Capitale de la Tunisie"));
-
-            // Vérifier la permission de localisation
-            checkLocationPermission();
-
-        } catch (Exception e) {
-            e.printStackTrace();
-            Toast.makeText(requireContext(),
-                    "Erreur lors du chargement de la carte: " + e.getMessage(),
-                    Toast.LENGTH_LONG).show();
-        }
+        checkLocationPermission();
     }
 
     private void checkLocationPermission() {
@@ -137,7 +131,6 @@ public class CarteFragment extends Fragment implements OnMapReadyCallback {
         if (ActivityCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_FINE_LOCATION)
                 == PackageManager.PERMISSION_GRANTED) {
             mMap.setMyLocationEnabled(true);
-            mMap.getUiSettings().setMyLocationButtonEnabled(true);
         }
     }
 
@@ -148,44 +141,146 @@ public class CarteFragment extends Fragment implements OnMapReadyCallback {
         }
 
         fusedLocationClient.getLastLocation()
-                .addOnSuccessListener(requireActivity(), (Location location) -> {
-                    if (location != null && mMap != null) {
-                        LatLng currentLatLng = new LatLng(
-                                location.getLatitude(),
-                                location.getLongitude()
-                        );
+                .addOnSuccessListener(location -> {
+                    if (location != null) {
+                        LatLng pos = new LatLng(location.getLatitude(), location.getLongitude());
 
-                        mMap.clear();
-                        mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(currentLatLng, 15f));
-
-                        mMap.addMarker(new MarkerOptions()
-                                .position(currentLatLng)
-                                .title("Ma position")
-                                .snippet("Vous êtes ici"));
+                        mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(pos, 15));
+                        mMap.addMarker(new MarkerOptions().position(pos).title("Ma position"));
                     }
-                })
-                .addOnFailureListener(requireActivity(), e -> {
-                    Toast.makeText(requireContext(),
-                            "Impossible d'obtenir la position: " + e.getMessage(),
-                            Toast.LENGTH_SHORT).show();
                 });
     }
 
-    @Override
-    public void onRequestPermissionsResult(int requestCode,
-                                           @NonNull String[] permissions,
-                                           @NonNull int[] grantResults) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+    // ================= TRAJET =================
 
-        if (requestCode == LOCATION_PERMISSION_REQUEST) {
-            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                enableMyLocation();
-                getCurrentLocation();
-            } else {
-                Toast.makeText(requireContext(),
-                        "Permission de localisation refusée",
-                        Toast.LENGTH_SHORT).show();
-            }
+    private void calculerTrajet() {
+
+        String depart = etDepart.getText().toString().trim();
+        String arrivee = etArrivee.getText().toString().trim();
+
+        if (depart.isEmpty() || arrivee.isEmpty()) {
+            Toast.makeText(requireContext(), "Remplis les champs", Toast.LENGTH_SHORT).show();
+            return;
         }
+
+        LatLng origin = getLocationFromAddress(depart);
+        LatLng dest = getLocationFromAddress(arrivee);
+
+        if (origin == null || dest == null) {
+            Toast.makeText(requireContext(), "Adresse invalide", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        drawRoute(origin, dest);
+    }
+
+    private LatLng getLocationFromAddress(String address) {
+        try {
+            Geocoder geocoder = new Geocoder(requireContext());
+            List<Address> list = geocoder.getFromLocationName(address, 1);
+
+            if (list != null && !list.isEmpty()) {
+                Address loc = list.get(0);
+                return new LatLng(loc.getLatitude(), loc.getLongitude());
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        return null;
+    }
+
+    private void drawRoute(LatLng origin, LatLng dest) {
+
+        String url = "https://maps.googleapis.com/maps/api/directions/json?"
+                + "origin=" + origin.latitude + "," + origin.longitude
+                + "&destination=" + dest.latitude + "," + dest.longitude
+                + "&mode=driving"
+                + "&key=" + API_KEY;
+
+        new Thread(() -> {
+            try {
+                URL u = new URL(url);
+                HttpURLConnection conn = (HttpURLConnection) u.openConnection();
+                conn.connect();
+
+                BufferedReader reader = new BufferedReader(
+                        new InputStreamReader(conn.getInputStream()));
+
+                StringBuilder json = new StringBuilder();
+                String line;
+
+                while ((line = reader.readLine()) != null) {
+                    json.append(line);
+                }
+
+                JSONObject data = new JSONObject(json.toString());
+
+                if (!data.getString("status").equals("OK")) return;
+
+                JSONObject route = data.getJSONArray("routes").getJSONObject(0);
+                JSONObject leg = route.getJSONArray("legs").getJSONObject(0);
+
+                String distance = leg.getJSONObject("distance").getString("text");
+                String duration = leg.getJSONObject("duration").getString("text");
+
+                String polyline = route.getJSONObject("overview_polyline").getString("points");
+
+                List<LatLng> points = decodePolyline(polyline);
+
+                requireActivity().runOnUiThread(() -> {
+
+                    mMap.clear();
+
+                    mMap.addPolyline(new PolylineOptions()
+                            .addAll(points)
+                            .width(10)
+                            .color(Color.BLUE));
+
+                    mMap.addMarker(new MarkerOptions().position(origin).title("Départ"));
+                    mMap.addMarker(new MarkerOptions().position(dest).title("Arrivée"));
+
+                    Toast.makeText(requireContext(),
+                            "Distance: " + distance + " | Durée: " + duration,
+                            Toast.LENGTH_LONG).show();
+                });
+
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }).start();
+    }
+
+    private List<LatLng> decodePolyline(String encoded) {
+        List<LatLng> poly = new ArrayList<>();
+        int index = 0, lat = 0, lng = 0;
+
+        while (index < encoded.length()) {
+            int b, shift = 0, result = 0;
+
+            do {
+                b = encoded.charAt(index++) - 63;
+                result |= (b & 0x1f) << shift;
+                shift += 5;
+            } while (b >= 0x20);
+
+            lat += ((result & 1) != 0 ? ~(result >> 1) : (result >> 1));
+
+            shift = 0;
+            result = 0;
+
+            do {
+                b = encoded.charAt(index++) - 63;
+                result |= (b & 0x1f) << shift;
+                shift += 5;
+            } while (b >= 0x20);
+
+            lng += ((result & 1) != 0 ? ~(result >> 1) : (result >> 1));
+
+            poly.add(new LatLng(lat / 1E5, lng / 1E5));
+        }
+
+        return poly;
     }
 }
