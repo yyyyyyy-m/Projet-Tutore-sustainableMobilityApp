@@ -37,7 +37,9 @@ public class CarteFragment extends Fragment implements OnMapReadyCallback {
     private BottomSheetBehavior<View> behavior;
 
     private Button btnOpenSearch, btnConnexion, btnCalculer;
+    private ImageButton bus ;
     private EditText etDepart, etArrivee;
+    private String travelMode = "driving";
 
     private static final int LOCATION_PERMISSION_REQUEST = 1;
 
@@ -55,42 +57,42 @@ public class CarteFragment extends Fragment implements OnMapReadyCallback {
     public void onViewCreated(@NonNull View v, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(v, savedInstanceState);
 
-        // INIT
         btnConnexion = v.findViewById(R.id.btnConnexion);
         btnOpenSearch = v.findViewById(R.id.btnOpenSearch);
         btnCalculer = v.findViewById(R.id.btnCalculerTrajet);
+
         etDepart = v.findViewById(R.id.etDepart);
         etArrivee = v.findViewById(R.id.etArrivee);
 
+        bus = v.findViewById(R.id.btnModeBus);
+
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(requireActivity());
 
-        // BOTTOM SHEET
         View bottomSheet = v.findViewById(R.id.bottomSheet);
 
         if (bottomSheet != null) {
             behavior = BottomSheetBehavior.from(bottomSheet);
-
             behavior.setPeekHeight(150);
             behavior.setFitToContents(true);
             behavior.setState(BottomSheetBehavior.STATE_COLLAPSED);
         }
 
-        // 🔍 RECHERCHER
-        btnOpenSearch.setOnClickListener(view -> {
-            Toast.makeText(requireContext(), "Recherche ouverte", Toast.LENGTH_SHORT).show();
-            behavior.setState(BottomSheetBehavior.STATE_EXPANDED);
-        });
+        btnOpenSearch.setOnClickListener(view ->
+                behavior.setState(BottomSheetBehavior.STATE_EXPANDED)
+        );
 
-        // 🔐 CONNEXION
-        btnConnexion.setOnClickListener(view -> {
-            Toast.makeText(requireContext(), "Connexion cliquée", Toast.LENGTH_SHORT).show();
-            behavior.setState(BottomSheetBehavior.STATE_EXPANDED);
-        });
+        btnConnexion.setOnClickListener(view ->
+                behavior.setState(BottomSheetBehavior.STATE_EXPANDED)
+        );
 
-        // 🚀 CALCUL TRAJET
         btnCalculer.setOnClickListener(view -> calculerTrajet());
 
-        // MAP
+        v.findViewById(R.id.btnModeBus).setOnClickListener(ve -> travelMode = "transit");
+
+        v.findViewById(R.id.btnModeMarche).setOnClickListener(vi -> travelMode = "walking");
+
+        v.findViewById(R.id.btnModeVelo).setOnClickListener(vo -> travelMode = "bicycling");
+
         SupportMapFragment mapFragment =
                 (SupportMapFragment) getChildFragmentManager().findFragmentById(R.id.map);
 
@@ -195,7 +197,8 @@ public class CarteFragment extends Fragment implements OnMapReadyCallback {
         String url = "https://maps.googleapis.com/maps/api/directions/json?"
                 + "origin=" + origin.latitude + "," + origin.longitude
                 + "&destination=" + dest.latitude + "," + dest.longitude
-                + "&mode=driving"
+                + "&mode=" + travelMode
+                + (travelMode.equals("transit") ? "&departure_time=now" : "")
                 + "&key=" + API_KEY;
 
         new Thread(() -> {
@@ -252,6 +255,8 @@ public class CarteFragment extends Fragment implements OnMapReadyCallback {
                     Toast.makeText(requireContext(),
                             "Distance: " + distance + " | Durée: " + duration,
                             Toast.LENGTH_LONG).show();
+
+
                 });
 
             } catch (Exception e) {

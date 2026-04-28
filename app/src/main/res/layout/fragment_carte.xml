@@ -131,7 +131,8 @@
                         android:layout_height="50dp"
                         android:layout_margin="4dp"
                         android:background="@android:color/white"
-                        android:src="@android:drawable/ic_menu_directions"
+                        android:src="@drawable/pictogramme_bus"
+                        android:scaleType="centerInside"
                         android:contentDescription="Bus"/>
 
                     <ImageButton
@@ -140,7 +141,8 @@
                         android:layout_height="50dp"
                         android:layout_margin="4dp"
                         android:background="@android:color/white"
-                        android:src="@android:drawable/ic_menu_directions"
+                        android:src="@drawable/marche"
+                        android:scaleType="centerInside"
                         android:contentDescription="Marche"/>
 
                     <ImageButton
@@ -148,8 +150,9 @@
                         android:layout_width="50dp"
                         android:layout_height="50dp"
                         android:layout_margin="4dp"
+                        android:scaleType="centerInside"
                         android:background="@android:color/white"
-                        android:src="@android:drawable/ic_menu_directions"
+                        android:src="@drawable/pictogramme_velo"
                         android:contentDescription="Vélo"/>
 
                 </LinearLayout>
