@@ -239,6 +239,15 @@ public class CarteFragment extends Fragment implements OnMapReadyCallback {
 
                     mMap.addMarker(new MarkerOptions().position(origin).title("Départ"));
                     mMap.addMarker(new MarkerOptions().position(dest).title("Arrivée"));
+                    LatLngBounds.Builder builder = new LatLngBounds.Builder();
+                    builder.include(origin);
+                    builder.include(dest);
+
+                    LatLngBounds bounds = builder.build();
+
+                    int padding = 150;
+
+                    mMap.animateCamera(CameraUpdateFactory.newLatLngBounds(bounds, padding));
 
                     Toast.makeText(requireContext(),
                             "Distance: " + distance + " | Durée: " + duration,
