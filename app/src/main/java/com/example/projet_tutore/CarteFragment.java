@@ -41,8 +41,7 @@ public class CarteFragment extends Fragment implements OnMapReadyCallback {
 
     private static final int LOCATION_PERMISSION_REQUEST = 1;
 
-    // ⚠️ METS TA VRAIE CLÉ GOOGLE API
-    private final String API_KEY = "TA_CLE_API";
+    private final String API_KEY = BuildConfig.MAPS_API_KEY;
 
     @Nullable
     @Override
