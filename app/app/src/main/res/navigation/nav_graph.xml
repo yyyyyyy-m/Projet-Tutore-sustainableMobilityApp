@@ -1,6 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
-
-
 <navigation
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
@@ -23,23 +21,7 @@
         android:label="Partage" />
 
     <fragment
-        android:id="@+id/resultatCovoiturageFragment"
-        android:name="com.example.projet_tutore.ResultatCovoiturageFragment"
-        android:label="Résultat covoiturage" />
-
-    <fragment
         android:id="@+id/profilFragment"
         android:name="com.example.projet_tutore.ProfilFragment"
         android:label="Profil" />
-
-    <fragment
-        android:id="@+id/paiementCovoiturageFragment"
-        android:name="com.example.projet_tutore.PaiementCovoiturageFragment"
-        android:label="Paiement covoiturage" />
-
-    <fragment
-        android:id="@+id/activitesCovoiturageFragment"
-        android:name="com.example.projet_tutore.ActivitesCovoiturageFragment"
-        android:label="Mes activités" />
-
 </navigation>

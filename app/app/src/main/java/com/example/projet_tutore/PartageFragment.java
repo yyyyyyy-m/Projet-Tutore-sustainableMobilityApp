@@ -1,33 +1,33 @@
 package com.example.projet_tutore;
 
 import android.os.Bundle;
-import android.text.TextUtils;
+import androidx.fragment.app.Fragment;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+
+import android.widget.Button;
 import android.widget.EditText;
-import android.widget.ImageView;
 import android.widget.LinearLayout;
-import android.widget.TextView;
 import android.widget.Toast;
+
+import android.text.TextUtils;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.fragment.app.Fragment;
-import androidx.navigation.Navigation;
+
 
 public class PartageFragment extends Fragment {
 
-    private TextView btnSearchMode, btnPublishMode;
-    private TextView btnSearchTrip, btnPublishTrip;
-    private ImageView btnHistory;
-
+    private Button btnSearchMode, btnPublishMode;
+    private Button btnSearchTrip, btnPublishTrip;
     private LinearLayout layoutSearch, layoutPublish;
 
     private EditText etDepartSearch, etDestinationSearch, etDateSearch, etTimeSearch, etPassengersSearch;
     private EditText etDepartPublish, etDestinationPublish, etDatePublish, etTimePublish, etPlacesPublish, etPricePublish;
 
     public PartageFragment() {
+        // il permet android de reconstruire lui-meme le fragement
     }
 
     @Override
@@ -41,22 +41,16 @@ public class PartageFragment extends Fragment {
         super.onViewCreated(view, savedInstanceState);
 
         initViews(view);
+        setupToggleButtons();
         setupActions();
-
-        Bundle args = getArguments();
-        if (args != null && "publish".equals(args.getString("mode"))) {
-            showPublishMode();
-        } else {
-            showSearchMode();
-        }
     }
 
     private void initViews(View view) {
         btnSearchMode = view.findViewById(R.id.btnSearchMode);
         btnPublishMode = view.findViewById(R.id.btnPublishMode);
+
         btnSearchTrip = view.findViewById(R.id.btnSearchTrip);
         btnPublishTrip = view.findViewById(R.id.btnPublishTrip);
-        btnHistory = view.findViewById(R.id.btnHistory);
 
         layoutSearch = view.findViewById(R.id.layoutSearch);
         layoutPublish = view.findViewById(R.id.layoutPublish);
@@ -75,15 +69,39 @@ public class PartageFragment extends Fragment {
         etPricePublish = view.findViewById(R.id.etPricePublish);
     }
 
-    private void setupActions() {
+    private void setupToggleButtons() {
         btnSearchMode.setOnClickListener(v -> showSearchMode());
         btnPublishMode.setOnClickListener(v -> showPublishMode());
+    }
 
-        btnHistory.setOnClickListener(v -> {
-            Navigation.findNavController(v)
-                    .navigate(R.id.activitesCovoiturageFragment);
-        });
+    private static final int COLOR_SELECTED_BG = 0xFFB9DCBB;   // vert
+    private static final int COLOR_UNSELECTED_BG = 0xFFF3F4F6; // gris
+    private static final int COLOR_SELECTED_TEXT = 0xFF1E1E1E;
+    private static final int COLOR_UNSELECTED_TEXT = 0xFF6B7280;
 
+    private void showSearchMode() {
+        layoutSearch.setVisibility(View.VISIBLE);
+        layoutPublish.setVisibility(View.GONE);
+
+        btnSearchMode.setBackgroundTintList(android.content.res.ColorStateList.valueOf(COLOR_SELECTED_BG));
+        btnSearchMode.setTextColor(COLOR_SELECTED_TEXT);
+
+        btnPublishMode.setBackgroundTintList(android.content.res.ColorStateList.valueOf(COLOR_UNSELECTED_BG));
+        btnPublishMode.setTextColor(COLOR_UNSELECTED_TEXT);
+    }
+
+    private void showPublishMode() {
+        layoutSearch.setVisibility(View.GONE);
+        layoutPublish.setVisibility(View.VISIBLE);
+
+        btnPublishMode.setBackgroundTintList(android.content.res.ColorStateList.valueOf(COLOR_SELECTED_BG));
+        btnPublishMode.setTextColor(COLOR_SELECTED_TEXT);
+
+        btnSearchMode.setBackgroundTintList(android.content.res.ColorStateList.valueOf(COLOR_UNSELECTED_BG));
+        btnSearchMode.setTextColor(COLOR_UNSELECTED_TEXT);
+    }
+
+    private void setupActions() {
         btnSearchTrip.setOnClickListener(v -> {
             String depart = etDepartSearch.getText().toString().trim();
             String destination = etDestinationSearch.getText().toString().trim();
@@ -98,15 +116,11 @@ public class PartageFragment extends Fragment {
                 return;
             }
 
-            Bundle bundle = new Bundle();
-            bundle.putString("depart", depart);
-            bundle.putString("destination", destination);
-            bundle.putString("date", date);
-            bundle.putString("time", time);
-            bundle.putString("passengers", passengers);
+            Toast.makeText(requireContext(), "Recherche lancée", Toast.LENGTH_SHORT).show();
 
-            Navigation.findNavController(v)
-                    .navigate(R.id.resultatCovoiturageFragment, bundle);
+            // sauter vers ResultatActivity
+            // Intent intent = new Intent(requireContext(), ResultatCovoiturageActivity.class);
+            // startActivity(intent);
         });
 
         btnPublishTrip.setOnClickListener(v -> {
@@ -126,27 +140,5 @@ public class PartageFragment extends Fragment {
 
             Toast.makeText(requireContext(), "Trajet publié avec succès", Toast.LENGTH_SHORT).show();
         });
-    }
-
-    private void showSearchMode() {
-        layoutSearch.setVisibility(View.VISIBLE);
-        layoutPublish.setVisibility(View.GONE);
-
-        btnSearchMode.setBackgroundResource(R.drawable.bg_tab_selected);
-        btnSearchMode.setTextColor(0xFF111827);
-
-        btnPublishMode.setBackgroundColor(android.graphics.Color.TRANSPARENT);
-        btnPublishMode.setTextColor(0xFF6B7280);
-    }
-
-    private void showPublishMode() {
-        layoutSearch.setVisibility(View.GONE);
-        layoutPublish.setVisibility(View.VISIBLE);
-
-        btnPublishMode.setBackgroundResource(R.drawable.bg_tab_selected);
-        btnPublishMode.setTextColor(0xFF111827);
-
-        btnSearchMode.setBackgroundColor(android.graphics.Color.TRANSPARENT);
-        btnSearchMode.setTextColor(0xFF6B7280);
     }
 }
