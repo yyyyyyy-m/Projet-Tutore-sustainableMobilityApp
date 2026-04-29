@@ -4,13 +4,39 @@ import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.LinearLayout;
 import android.widget.TextView;
+import android.widget.Toast;
+
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.navigation.Navigation;
 
+import com.google.firebase.firestore.DocumentSnapshot;
+import com.google.firebase.firestore.FirebaseFirestore;
+
+import java.util.Locale;
+
 public class ResultatCovoiturageFragment extends Fragment {
+
+    private FirebaseFirestore db;
+
+    private String depart;
+    private String destination;
+    private String date;
+    private String time;
+    private String passengers;
+
+    private int passengersCount = 1;
+
+    private TextView tvFrom;
+    private TextView tvTo;
+    private TextView tvDateTime;
+    private TextView tvPassengers;
+    private TextView tvResultCount;
+    private TextView tvSectionToday;
+    private LinearLayout llResultsContainer;
 
     public ResultatCovoiturageFragment() {}
 
@@ -24,65 +50,191 @@ public class ResultatCovoiturageFragment extends Fragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
-        TextView tvFrom = view.findViewById(R.id.tvFrom);
-        TextView tvTo = view.findViewById(R.id.tvTo);
-        TextView tvDateTime = view.findViewById(R.id.tvDateTime);
-        TextView tvPassengers = view.findViewById(R.id.tvPassengers);
+        db = FirebaseFirestore.getInstance();
+
+        TextView tvClose = view.findViewById(R.id.tvClose);
         TextView tvEditSearch = view.findViewById(R.id.tvEditSearch);
 
-        TextView tabProposerTrajet = view.findViewById(R.id.tabProposerTrajet);
+        tvFrom = view.findViewById(R.id.tvFrom);
+        tvTo = view.findViewById(R.id.tvTo);
+        tvDateTime = view.findViewById(R.id.tvDateTime);
+        tvPassengers = view.findViewById(R.id.tvPassengers);
+        tvResultCount = view.findViewById(R.id.tvResultCount);
+        tvSectionToday = view.findViewById(R.id.tvSectionToday);
+        llResultsContainer = view.findViewById(R.id.llResultsContainer);
 
-        TextView btnChooseSophie = view.findViewById(R.id.btnChooseSophie);
-        TextView btnChooseJean = view.findViewById(R.id.btnChooseJean);
+        readArguments();
+        showSearchSummary();
+        loadResultsFromFirebase();
 
-        Bundle args = getArguments();
-        if (args != null) {
-            tvFrom.setText("De   " + args.getString("depart", ""));
-            tvTo.setText("À    " + args.getString("destination", ""));
-            tvDateTime.setText("Départ : " + args.getString("date", "") + ", " + args.getString("time", ""));
-            tvPassengers.setText("Nombre de passagers : " + args.getString("passengers", ""));
-        }
+        tvClose.setOnClickListener(v ->
+                Navigation.findNavController(v).popBackStack()
+        );
 
         tvEditSearch.setOnClickListener(v ->
                 Navigation.findNavController(v).popBackStack()
         );
+    }
 
-        tabProposerTrajet.setOnClickListener(v -> {
+    private void readArguments() {
+        Bundle args = getArguments();
+
+        if (args != null) {
+            depart = args.getString("depart", "");
+            destination = args.getString("destination", "");
+            date = args.getString("date", "");
+            time = args.getString("time", "");
+            passengers = args.getString("passengers", "1");
+        } else {
+            depart = "";
+            destination = "";
+            date = "";
+            time = "";
+            passengers = "1";
+        }
+
+        try {
+            passengersCount = Integer.parseInt(passengers);
+        } catch (NumberFormatException e) {
+            passengersCount = 1;
+        }
+    }
+
+    private void showSearchSummary() {
+        tvFrom.setText("De  " + depart);
+        tvTo.setText("À  " + destination);
+        tvDateTime.setText("Départ : " + date + ", " + time);
+        tvPassengers.setText("Nombre de passagers : " + passengers);
+    }
+
+    private void loadResultsFromFirebase() {
+        llResultsContainer.removeAllViews();
+        tvResultCount.setText("Recherche en cours...");
+        tvSectionToday.setVisibility(View.GONE);
+
+        db.collection("trajets")
+                .get()
+                .addOnSuccessListener(queryDocumentSnapshots -> {
+                    int count = 0;
+
+                    for (DocumentSnapshot document : queryDocumentSnapshots) {
+                        Trajet trajet = documentToTrajet(document);
+
+                        if (matchesSearch(trajet)) {
+                            count++;
+                            addTrajetCard(trajet);
+                        }
+                    }
+
+                    if (count == 0) {
+                        tvResultCount.setText("Aucun conducteur trouvé pour cet itinéraire.");
+                        tvSectionToday.setVisibility(View.GONE);
+                    } else {
+                        tvResultCount.setText(count + " conducteur(s) avec correspondance d’itinéraire !");
+                        tvSectionToday.setVisibility(View.VISIBLE);
+                    }
+                })
+                .addOnFailureListener(e -> {
+                    tvResultCount.setText("Erreur lors du chargement des résultats.");
+                    Toast.makeText(requireContext(), "Erreur Firebase : " + e.getMessage(), Toast.LENGTH_LONG).show();
+                });
+    }
+
+    private Trajet documentToTrajet(DocumentSnapshot document) {
+        Trajet trajet = new Trajet();
+
+        trajet.id = document.getId();
+
+        trajet.driverName = getStringValue(document, "driverName", "Conducteur");
+        trajet.initials = getStringValue(document, "initials", "CD");
+
+        trajet.depart = getStringValue(document, "depart", "");
+        trajet.destination = getStringValue(document, "destination", "");
+        trajet.departLower = getStringValue(document, "departLower", trajet.depart.toLowerCase(Locale.ROOT));
+        trajet.destinationLower = getStringValue(document, "destinationLower", trajet.destination.toLowerCase(Locale.ROOT));
+
+        trajet.date = getStringValue(document, "date", "");
+        trajet.time = getStringValue(document, "time", "");
+
+        Long placesLong = document.getLong("places");
+        trajet.places = placesLong == null ? 0 : placesLong.intValue();
+
+        Double priceDouble = document.getDouble("price");
+        if (priceDouble == null) {
+            Long priceLong = document.getLong("price");
+            trajet.price = priceLong == null ? 0 : priceLong.doubleValue();
+        } else {
+            trajet.price = priceDouble;
+        }
+
+        trajet.status = getStringValue(document, "status", "available");
+
+        return trajet;
+    }
+
+    private String getStringValue(DocumentSnapshot document, String key, String defaultValue) {
+        String value = document.getString(key);
+        return value == null ? defaultValue : value;
+    }
+
+    private boolean matchesSearch(Trajet trajet) {
+        boolean sameDepart = trajet.departLower.equals(depart.toLowerCase(Locale.ROOT));
+        boolean sameDestination = trajet.destinationLower.equals(destination.toLowerCase(Locale.ROOT));
+        boolean sameDate = trajet.date.equals(date);
+        boolean enoughPlaces = trajet.places >= passengersCount;
+        boolean available = !"completed".equals(trajet.status);
+
+        return sameDepart && sameDestination && sameDate && enoughPlaces && available;
+    }
+
+    private void addTrajetCard(Trajet trajet) {
+        View card = LayoutInflater.from(requireContext())
+                .inflate(R.layout.item_covoiturage_trajet, llResultsContainer, false);
+
+        TextView tvInitials = card.findViewById(R.id.tvInitials);
+        TextView tvDriverName = card.findViewById(R.id.tvDriverName);
+        TextView tvPrice = card.findViewById(R.id.tvPrice);
+        TextView tvDeparture = card.findViewById(R.id.tvDeparture);
+        TextView tvTime = card.findViewById(R.id.tvTime);
+        TextView tvDestination = card.findViewById(R.id.tvDestination);
+        TextView tvPlaces = card.findViewById(R.id.tvPlaces);
+        TextView btnChoose = card.findViewById(R.id.btnChoose);
+
+        tvInitials.setText(trajet.initials);
+        tvDriverName.setText(trajet.driverName);
+        tvPrice.setText(formatPrice(trajet.price) + "€\npar place");
+
+        tvDeparture.setText(trajet.depart);
+        tvTime.setText("Aujourd’hui • " + trajet.time);
+        tvDestination.setText(trajet.destination);
+
+        tvPlaces.setText(trajet.places + "\nplaces");
+
+        btnChoose.setOnClickListener(v -> {
             Bundle bundle = new Bundle();
-            bundle.putString("mode", "publish");
+            bundle.putString("documentId", trajet.id);
 
-            Navigation.findNavController(v)
-                    .navigate(R.id.partageFragment, bundle);
-        });
-
-        btnChooseSophie.setOnClickListener(v -> {
-            Bundle bundle = new Bundle();
-            bundle.putString("driverName", "Sophie Martin");
-            bundle.putString("initials", "SM");
-            bundle.putString("departure", "Châtelet Les Halles");
-            bundle.putString("arrival", "Gare du Nord");
-            bundle.putString("time", "14:30");
-            bundle.putString("places", "2");
-            bundle.putString("price", "5");
-            bundle.putString("points", "+25");
+            bundle.putString("driverName", trajet.driverName);
+            bundle.putString("initials", trajet.initials);
+            bundle.putString("departure", trajet.depart);
+            bundle.putString("arrival", trajet.destination);
+            bundle.putString("date", trajet.date);
+            bundle.putString("time", trajet.time);
+            bundle.putString("places", String.valueOf(trajet.places));
+            bundle.putString("price", formatPrice(trajet.price));
+            bundle.putString("passengers", String.valueOf(passengersCount));
 
             Navigation.findNavController(v)
                     .navigate(R.id.paiementCovoiturageFragment, bundle);
         });
 
-        btnChooseJean.setOnClickListener(v -> {
-            Bundle bundle = new Bundle();
-            bundle.putString("driverName", "Jean Dupont");
-            bundle.putString("initials", "JD");
-            bundle.putString("departure", "Louvre");
-            bundle.putString("arrival", "Gare du Nord");
-            bundle.putString("time", "16:00");
-            bundle.putString("places", "3");
-            bundle.putString("price", "4");
-            bundle.putString("points", "+20");
+        llResultsContainer.addView(card);
+    }
 
-            Navigation.findNavController(v)
-                    .navigate(R.id.paiementCovoiturageFragment, bundle);
-        });
+    private String formatPrice(double price) {
+        if (price == (int) price) {
+            return String.valueOf((int) price);
+        }
+        return String.valueOf(price);
     }
 }

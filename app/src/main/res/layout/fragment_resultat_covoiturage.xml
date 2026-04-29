@@ -1,8 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.core.widget.NestedScrollView
+    xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#FFFFFF">
+    android:background="#FFFFFF"
+    android:fillViewport="true">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -10,50 +12,29 @@
         android:orientation="vertical"
         android:padding="22dp">
 
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Covoiturage"
-            android:textColor="#1F2937"
-            android:textSize="28sp"
-            android:textStyle="bold" />
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Conducteurs disponibles sur votre itinéraire"
-            android:textColor="#6B7280"
-            android:textSize="15sp" />
-
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="64dp"
-            android:layout_marginTop="18dp"
-            android:background="@drawable/bg_tab_container"
-            android:orientation="horizontal"
-            android:padding="4dp">
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
 
             <TextView
-                android:id="@+id/tabRechercherTrajet"
-                android:layout_width="0dp"
-                android:layout_height="match_parent"
-                android:layout_weight="1"
-                android:background="@drawable/bg_tab_selected"
+                android:id="@+id/tvClose"
+                android:layout_width="52dp"
+                android:layout_height="52dp"
                 android:gravity="center"
-                android:text="Rechercher un\ntrajet"
-                android:textColor="#111827"
-                android:textSize="15sp"
+                android:text="×"
+                android:textColor="#00A846"
+                android:textSize="42sp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:text="Résultats"
+                android:textColor="#1F2937"
+                android:textSize="28sp"
                 android:textStyle="bold" />
-
-            <TextView
-                android:id="@+id/tabProposerTrajet"
-                android:layout_width="0dp"
-                android:layout_height="match_parent"
-                android:layout_weight="1"
-                android:gravity="center"
-                android:text="Proposer un trajet"
-                android:textColor="#6B7280"
-                android:textSize="15sp" />
         </LinearLayout>
 
         <LinearLayout
@@ -68,59 +49,83 @@
                 android:layout_weight="1"
                 android:orientation="vertical">
 
-                <TextView
-                    android:id="@+id/tvFrom"
+                <LinearLayout
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:textColor="#35B94A"
-                    android:textSize="14sp" />
+                    android:orientation="horizontal">
 
-                <TextView
-                    android:id="@+id/tvTo"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="12dp"
-                    android:textColor="#35B94A"
-                    android:textSize="14sp" />
+                    <TextView
+                        android:id="@+id/tvFrom"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="De"
+                        android:textColor="#00A846"
+                        android:textSize="16sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/tvTo"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="28dp"
+                        android:text="À"
+                        android:textColor="#00A846"
+                        android:textSize="16sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
 
                 <TextView
                     android:id="@+id/tvDateTime"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="12dp"
+                    android:layout_marginTop="22dp"
                     android:textColor="#9CA3AF"
-                    android:textSize="13sp" />
+                    android:textSize="15sp" />
 
                 <TextView
                     android:id="@+id/tvPassengers"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="6dp"
+                    android:layout_marginTop="8dp"
                     android:textColor="#9CA3AF"
-                    android:textSize="13sp" />
+                    android:textSize="15sp" />
             </LinearLayout>
 
             <TextView
                 android:id="@+id/tvEditSearch"
-                android:layout_width="64dp"
-                android:layout_height="64dp"
+                android:layout_width="72dp"
+                android:layout_height="54dp"
                 android:gravity="center"
-                android:text="✎\nEdit"
-                android:textColor="#4CAF50"
+                android:text="✎  Edit"
+                android:textColor="#00A846"
                 android:textSize="16sp" />
         </LinearLayout>
 
         <TextView
+            android:id="@+id/tvResultCount"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="28dp"
-            android:text="34 conducteurs avec correspondance d’itinéraire !"
-            android:textColor="#4B5563"
+            android:layout_marginTop="34dp"
+            android:text="Recherche en cours..."
+            android:textColor="#374151"
             android:textSize="16sp" />
 
-        <include layout="@layout/item_covoiturage_sophie" />
+        <TextView
+            android:id="@+id/tvSectionToday"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="34dp"
+            android:text="Aujourd’hui"
+            android:textColor="#6B7280"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:visibility="gone" />
 
-        <include layout="@layout/item_covoiturage_jean" />
+        <LinearLayout
+            android:id="@+id/llResultsContainer"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical" />
 
     </LinearLayout>
 </androidx.core.widget.NestedScrollView>

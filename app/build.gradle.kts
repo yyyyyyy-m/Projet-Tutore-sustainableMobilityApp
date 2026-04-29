@@ -65,6 +65,7 @@ dependencies {
 
     //Firebase
     implementation(platform("com.google.firebase:firebase-bom:34.9.0"))
+    implementation("com.google.firebase:firebase-firestore")
 
     // JavaMail pour Android
     implementation ("com.sun.mail:android-mail:1.6.7")

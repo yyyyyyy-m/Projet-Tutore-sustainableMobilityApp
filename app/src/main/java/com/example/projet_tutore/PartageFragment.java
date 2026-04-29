@@ -16,6 +16,13 @@ import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.navigation.Navigation;
 
+import com.google.firebase.firestore.FieldValue;
+import com.google.firebase.firestore.FirebaseFirestore;
+
+import java.util.HashMap;
+import java.util.Locale;
+import java.util.Map;
+
 public class PartageFragment extends Fragment {
 
     private TextView btnSearchMode, btnPublishMode;
@@ -26,6 +33,8 @@ public class PartageFragment extends Fragment {
 
     private EditText etDepartSearch, etDestinationSearch, etDateSearch, etTimeSearch, etPassengersSearch;
     private EditText etDepartPublish, etDestinationPublish, etDatePublish, etTimePublish, etPlacesPublish, etPricePublish;
+
+    private FirebaseFirestore db;
 
     public PartageFragment() {
     }
@@ -39,6 +48,8 @@ public class PartageFragment extends Fragment {
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
+
+        db = FirebaseFirestore.getInstance();
 
         initViews(view);
         setupActions();
@@ -84,48 +95,112 @@ public class PartageFragment extends Fragment {
                     .navigate(R.id.activitesCovoiturageFragment);
         });
 
-        btnSearchTrip.setOnClickListener(v -> {
-            String depart = etDepartSearch.getText().toString().trim();
-            String destination = etDestinationSearch.getText().toString().trim();
-            String date = etDateSearch.getText().toString().trim();
-            String time = etTimeSearch.getText().toString().trim();
-            String passengers = etPassengersSearch.getText().toString().trim();
+        btnSearchTrip.setOnClickListener(v -> searchTrip(v));
 
-            if (TextUtils.isEmpty(depart) || TextUtils.isEmpty(destination)
-                    || TextUtils.isEmpty(date) || TextUtils.isEmpty(time)
-                    || TextUtils.isEmpty(passengers)) {
-                Toast.makeText(requireContext(), "Veuillez remplir tous les champs", Toast.LENGTH_SHORT).show();
+        btnPublishTrip.setOnClickListener(v -> publishTrip());
+    }
+
+    private void searchTrip(View v) {
+        String depart = etDepartSearch.getText().toString().trim();
+        String destination = etDestinationSearch.getText().toString().trim();
+        String date = etDateSearch.getText().toString().trim();
+        String time = etTimeSearch.getText().toString().trim();
+        String passengers = etPassengersSearch.getText().toString().trim();
+
+        if (TextUtils.isEmpty(depart) || TextUtils.isEmpty(destination)
+                || TextUtils.isEmpty(date) || TextUtils.isEmpty(time)
+                || TextUtils.isEmpty(passengers)) {
+            Toast.makeText(requireContext(), "Veuillez remplir tous les champs", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        try {
+            int passengersInt = Integer.parseInt(passengers);
+            if (passengersInt <= 0) {
+                Toast.makeText(requireContext(), "Nombre de passagers invalide", Toast.LENGTH_SHORT).show();
+                return;
+            }
+        } catch (NumberFormatException e) {
+            Toast.makeText(requireContext(), "Nombre de passagers invalide", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        Bundle bundle = new Bundle();
+        bundle.putString("depart", depart);
+        bundle.putString("destination", destination);
+        bundle.putString("date", date);
+        bundle.putString("time", time);
+        bundle.putString("passengers", passengers);
+
+        Navigation.findNavController(v)
+                .navigate(R.id.resultatCovoiturageFragment, bundle);
+    }
+
+    private void publishTrip() {
+        String depart = etDepartPublish.getText().toString().trim();
+        String destination = etDestinationPublish.getText().toString().trim();
+        String date = etDatePublish.getText().toString().trim();
+        String time = etTimePublish.getText().toString().trim();
+        String places = etPlacesPublish.getText().toString().trim();
+        String price = etPricePublish.getText().toString().trim();
+
+        if (TextUtils.isEmpty(depart) || TextUtils.isEmpty(destination)
+                || TextUtils.isEmpty(date) || TextUtils.isEmpty(time)
+                || TextUtils.isEmpty(places) || TextUtils.isEmpty(price)) {
+            Toast.makeText(requireContext(), "Veuillez remplir tous les champs", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        int placesInt;
+        double priceDouble;
+
+        try {
+            placesInt = Integer.parseInt(places);
+            priceDouble = Double.parseDouble(price.replace(",", "."));
+
+            if (placesInt <= 0 || priceDouble < 0) {
+                Toast.makeText(requireContext(), "Places ou prix invalide", Toast.LENGTH_SHORT).show();
                 return;
             }
 
-            Bundle bundle = new Bundle();
-            bundle.putString("depart", depart);
-            bundle.putString("destination", destination);
-            bundle.putString("date", date);
-            bundle.putString("time", time);
-            bundle.putString("passengers", passengers);
+        } catch (NumberFormatException e) {
+            Toast.makeText(requireContext(), "Places ou prix invalide", Toast.LENGTH_SHORT).show();
+            return;
+        }
 
-            Navigation.findNavController(v)
-                    .navigate(R.id.resultatCovoiturageFragment, bundle);
-        });
+        Map<String, Object> trajet = new HashMap<>();
+        trajet.put("driverName", "Conducteur");
+        trajet.put("initials", "CD");
 
-        btnPublishTrip.setOnClickListener(v -> {
-            String depart = etDepartPublish.getText().toString().trim();
-            String destination = etDestinationPublish.getText().toString().trim();
-            String date = etDatePublish.getText().toString().trim();
-            String time = etTimePublish.getText().toString().trim();
-            String places = etPlacesPublish.getText().toString().trim();
-            String price = etPricePublish.getText().toString().trim();
+        trajet.put("depart", depart);
+        trajet.put("destination", destination);
+        trajet.put("departLower", depart.toLowerCase(Locale.ROOT));
+        trajet.put("destinationLower", destination.toLowerCase(Locale.ROOT));
 
-            if (TextUtils.isEmpty(depart) || TextUtils.isEmpty(destination)
-                    || TextUtils.isEmpty(date) || TextUtils.isEmpty(time)
-                    || TextUtils.isEmpty(places) || TextUtils.isEmpty(price)) {
-                Toast.makeText(requireContext(), "Veuillez remplir tous les champs", Toast.LENGTH_SHORT).show();
-                return;
-            }
+        trajet.put("date", date);
+        trajet.put("time", time);
+        trajet.put("places", placesInt);
+        trajet.put("price", priceDouble);
+        trajet.put("status", "available");
+        trajet.put("createdAt", FieldValue.serverTimestamp());
 
-            Toast.makeText(requireContext(), "Trajet publié avec succès", Toast.LENGTH_SHORT).show();
-        });
+        db.collection("trajets")
+                .add(trajet)
+                .addOnSuccessListener(documentReference -> {
+                    Toast.makeText(requireContext(), "Trajet publié avec succès", Toast.LENGTH_SHORT).show();
+
+                    etDepartPublish.setText("");
+                    etDestinationPublish.setText("");
+                    etDatePublish.setText("");
+                    etTimePublish.setText("");
+                    etPlacesPublish.setText("");
+                    etPricePublish.setText("");
+
+                    showSearchMode();
+                })
+                .addOnFailureListener(e -> {
+                    Toast.makeText(requireContext(), "Erreur Firebase : " + e.getMessage(), Toast.LENGTH_LONG).show();
+                });
     }
 
     private void showSearchMode() {
