@@ -1,158 +1,237 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools"
+<androidx.core.widget.NestedScrollView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:fillViewport="true"
-    android:background="#FFFFFF"
-    tools:context=".PartageFragment">
+    android:background="#FFFFFF">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:padding="20dp">
+        android:padding="18dp">
 
-        <TextView
-            android:id="@+id/tvTitle"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Covoiturage"
-            android:textSize="24sp"
-            android:textStyle="bold"
-            android:textColor="#1E1E1E" />
-
-        <TextView
-            android:id="@+id/tvSubtitle"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
-            android:text="Cherchez les conducteurs sur votre itinéraire"
-            android:textSize="15sp"
-            android:textColor="#8A8A8A" />
-
+        <!-- HEADER -->
         <LinearLayout
-            android:id="@+id/layoutToggle"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="20dp"
-            android:orientation="horizontal"
-            android:background="#F3F4F6"
-            android:padding="4dp">
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
 
-            <Button
-                android:id="@+id/btnSearchMode"
+            <TextView
+                android:layout_width="36dp"
+                android:layout_height="36dp"
+                android:gravity="center"
+                android:text="‹"
+                android:textColor="#4B5563"
+                android:textSize="32sp" />
+
+            <LinearLayout
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
+                android:layout_marginStart="6dp"
                 android:layout_weight="1"
-                android:backgroundTint="#B9DCBB"
-                android:text="Rechercher un trajet"
-                android:textAllCaps="false"
-                android:textColor="#1E1E1E"
-                android:textSize="13sp"/>
+                android:orientation="vertical">
 
-            <Button
-                android:id="@+id/btnPublishMode"
-                android:layout_width="0dp"
-                android:layout_height="48dp"
-                android:layout_weight="1"
-                android:layout_marginStart="8dp"
-                android:backgroundTint ="#F3F4F6"
-                android:text="Proposer un trajet"
-                android:textAllCaps="false"
-                android:textSize="13sp"
-                android:textColor="#6B7280"/>
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Covoiturage"
+                    android:textColor="#1F2937"
+                    android:textSize="22sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Cherchez ou Partagez vos trajets"
+                    android:textColor="#6B7280"
+                    android:textSize="13sp" />
+            </LinearLayout>
+
+            <ImageView
+                android:id="@+id/btnHistory"
+                android:layout_width="42dp"
+                android:layout_height="42dp"
+                android:padding="9dp"
+                android:src="@android:drawable/ic_menu_recent_history"
+                app:tint="#00C853" />
         </LinearLayout>
 
-        <!-- chercher un trajet -->
+        <!-- TAB -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="64dp"
+            android:layout_marginTop="18dp"
+            android:background="@drawable/bg_tab_container"
+            android:orientation="horizontal"
+            android:padding="4dp">
+
+            <TextView
+                android:id="@+id/btnSearchMode"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:background="@drawable/bg_tab_selected"
+                android:gravity="center"
+                android:text="Rechercher un\ntrajet"
+                android:textColor="#111827"
+                android:textSize="14sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/btnPublishMode"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:gravity="center"
+                android:text="Proposer un trajet"
+                android:textColor="#6B7280"
+                android:textSize="14sp" />
+        </LinearLayout>
+
+        <!-- SEARCH -->
         <LinearLayout
             android:id="@+id/layoutSearch"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="24dp"
+            android:layout_marginTop="28dp"
             android:orientation="vertical">
 
             <EditText
                 android:id="@+id/etDepartSearch"
                 android:layout_width="match_parent"
                 android:layout_height="56dp"
-                android:background="@android:drawable/edit_text"
+                android:background="@drawable/bg_input_rounded"
+                android:drawableStart="@android:drawable/ic_menu_search"
+                android:drawablePadding="12dp"
                 android:hint="Choisir le point de départ"
-                android:paddingStart="16dp"
-                android:paddingEnd="16dp"
-                android:textSize="14sp" />
+                android:paddingStart="18dp"
+                android:paddingEnd="18dp"
+                android:textColor="#111827"
+                android:textColorHint="#9CA3AF"
+                android:textSize="16sp" />
 
             <EditText
                 android:id="@+id/etDestinationSearch"
                 android:layout_width="match_parent"
                 android:layout_height="56dp"
                 android:layout_marginTop="14dp"
-                android:background="@android:drawable/edit_text"
+                android:background="@drawable/bg_input_rounded"
+                android:drawableStart="@android:drawable/ic_menu_search"
+                android:drawablePadding="12dp"
                 android:hint="Où allez-vous ?"
-                android:paddingStart="16dp"
-                android:paddingEnd="16dp"
-                android:textSize="14sp" />
+                android:paddingStart="18dp"
+                android:paddingEnd="18dp"
+                android:textColor="#111827"
+                android:textColorHint="#9CA3AF"
+                android:textSize="16sp" />
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
+                android:layout_marginTop="28dp"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Date"
+                    android:textColor="#4B5563"
+                    android:textSize="14sp" />
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="14dp"
+                    android:layout_weight="1"
+                    android:text="Heure"
+                    android:textColor="#4B5563"
+                    android:textSize="14sp" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="56dp"
+                android:layout_marginTop="8dp"
                 android:orientation="horizontal">
 
                 <EditText
                     android:id="@+id/etDateSearch"
                     android:layout_width="0dp"
-                    android:layout_height="56dp"
+                    android:layout_height="match_parent"
                     android:layout_weight="1"
-                    android:background="@android:drawable/edit_text"
+                    android:background="@drawable/bg_input_rounded"
                     android:hint="mm/dd/yyyy"
                     android:paddingStart="16dp"
                     android:paddingEnd="16dp"
+                    android:textColor="#111827"
+                    android:textColorHint="#B8BDC7"
                     android:textSize="14sp" />
 
                 <EditText
                     android:id="@+id/etTimeSearch"
                     android:layout_width="0dp"
-                    android:layout_height="56dp"
+                    android:layout_height="match_parent"
+                    android:layout_marginStart="14dp"
                     android:layout_weight="1"
-                    android:layout_marginStart="12dp"
-                    android:background="@android:drawable/edit_text"
+                    android:background="@drawable/bg_input_rounded"
                     android:hint="--:--"
                     android:paddingStart="16dp"
                     android:paddingEnd="16dp"
+                    android:textColor="#111827"
+                    android:textColorHint="#B8BDC7"
                     android:textSize="14sp" />
             </LinearLayout>
 
-            <EditText
-                android:id="@+id/etPassengersSearch"
+            <LinearLayout
                 android:layout_width="match_parent"
-                android:layout_height="56dp"
-                android:layout_marginTop="14dp"
-                android:background="@android:drawable/edit_text"
-                android:hint="Nombre de passagers"
-                android:inputType="number"
-                android:paddingStart="16dp"
-                android:paddingEnd="16dp"
-                android:textSize="14sp" />
+                android:layout_height="48dp"
+                android:layout_marginTop="18dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
 
-            <Button
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Nombre de passagers"
+                    android:textColor="#4B5563"
+                    android:textSize="14sp" />
+
+                <EditText
+                    android:id="@+id/etPassengersSearch"
+                    android:layout_width="52dp"
+                    android:layout_height="36dp"
+                    android:background="@drawable/bg_input_rounded"
+                    android:gravity="center"
+                    android:inputType="number"
+                    android:textColor="#111827"
+                    android:textSize="14sp" />
+            </LinearLayout>
+
+            <TextView
                 android:id="@+id/btnSearchTrip"
-                android:layout_width="match_parent"
-                android:layout_height="54dp"
-                android:layout_marginTop="28dp"
-                android:backgroundTint="#4CAF50"
+                android:layout_width="210dp"
+                android:layout_height="56dp"
+                android:layout_gravity="center"
+                android:layout_marginTop="34dp"
+                android:background="@drawable/bg_button_green_round"
+                android:gravity="center"
                 android:text="Rechercher"
-                android:textAllCaps="false"
                 android:textColor="#FFFFFF"
-                android:textSize="16sp" />
+                android:textSize="17sp"
+                android:textStyle="bold" />
         </LinearLayout>
 
-        <!-- proposer un trajet -->
+        <!-- PUBLISH -->
         <LinearLayout
             android:id="@+id/layoutPublish"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="24dp"
+            android:layout_marginTop="18dp"
             android:orientation="vertical"
             android:visibility="gone">
 
@@ -161,18 +240,22 @@
                 android:layout_height="wrap_content"
                 android:text="Point de départ"
                 android:textColor="#374151"
-                android:textSize="13sp" />
+                android:textSize="14sp" />
 
             <EditText
                 android:id="@+id/etDepartPublish"
                 android:layout_width="match_parent"
-                android:layout_height="56dp"
-                android:layout_marginTop="6dp"
-                android:background="@android:drawable/edit_text"
+                android:layout_height="52dp"
+                android:layout_marginTop="8dp"
+                android:background="@drawable/bg_input_rounded"
+                android:drawableStart="@android:drawable/ic_dialog_map"
+                android:drawablePadding="12dp"
                 android:hint="Entrez l'adresse de départ"
                 android:paddingStart="16dp"
                 android:paddingEnd="16dp"
-                android:textSize="14sp" />
+                android:textColor="#111827"
+                android:textColorHint="#8B8B8B"
+                android:textSize="15sp" />
 
             <TextView
                 android:layout_width="wrap_content"
@@ -180,46 +263,80 @@
                 android:layout_marginTop="14dp"
                 android:text="Destination"
                 android:textColor="#374151"
-                android:textSize="13sp" />
+                android:textSize="14sp" />
 
             <EditText
                 android:id="@+id/etDestinationPublish"
                 android:layout_width="match_parent"
-                android:layout_height="56dp"
-                android:layout_marginTop="6dp"
-                android:background="@android:drawable/edit_text"
+                android:layout_height="52dp"
+                android:layout_marginTop="8dp"
+                android:background="@drawable/bg_input_rounded"
+                android:drawableStart="@android:drawable/ic_dialog_map"
+                android:drawablePadding="12dp"
                 android:hint="Entrez la destination"
                 android:paddingStart="16dp"
                 android:paddingEnd="16dp"
-                android:textSize="14sp" />
+                android:textColor="#111827"
+                android:textColorHint="#8B8B8B"
+                android:textSize="15sp" />
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
+                android:layout_marginTop="14dp"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Date"
+                    android:textColor="#374151"
+                    android:textSize="14sp" />
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="14dp"
+                    android:layout_weight="1"
+                    android:text="Heure"
+                    android:textColor="#374151"
+                    android:textSize="14sp" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="52dp"
+                android:layout_marginTop="8dp"
                 android:orientation="horizontal">
 
                 <EditText
                     android:id="@+id/etDatePublish"
                     android:layout_width="0dp"
-                    android:layout_height="56dp"
+                    android:layout_height="match_parent"
                     android:layout_weight="1"
-                    android:background="@android:drawable/edit_text"
+                    android:background="@drawable/bg_input_rounded"
+                    android:drawableEnd="@android:drawable/ic_menu_my_calendar"
                     android:hint="mm/dd/yyyy"
                     android:paddingStart="16dp"
                     android:paddingEnd="16dp"
+                    android:textColor="#111827"
+                    android:textColorHint="#B8BDC7"
                     android:textSize="14sp" />
 
                 <EditText
                     android:id="@+id/etTimePublish"
                     android:layout_width="0dp"
-                    android:layout_height="56dp"
+                    android:layout_height="match_parent"
+                    android:layout_marginStart="14dp"
                     android:layout_weight="1"
-                    android:layout_marginStart="12dp"
-                    android:background="@android:drawable/edit_text"
+                    android:background="@drawable/bg_input_rounded"
+                    android:drawableEnd="@android:drawable/ic_menu_recent_history"
                     android:hint="--:--"
                     android:paddingStart="16dp"
                     android:paddingEnd="16dp"
+                    android:textColor="#111827"
+                    android:textColorHint="#B8BDC7"
                     android:textSize="14sp" />
             </LinearLayout>
 
@@ -229,42 +346,71 @@
                 android:layout_marginTop="14dp"
                 android:orientation="horizontal">
 
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Places disponibles"
+                    android:textColor="#374151"
+                    android:textSize="14sp" />
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="14dp"
+                    android:layout_weight="1"
+                    android:text="Prix par place"
+                    android:textColor="#374151"
+                    android:textSize="14sp" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="52dp"
+                android:layout_marginTop="8dp"
+                android:orientation="horizontal">
+
                 <EditText
                     android:id="@+id/etPlacesPublish"
                     android:layout_width="0dp"
-                    android:layout_height="56dp"
+                    android:layout_height="match_parent"
                     android:layout_weight="1"
-                    android:background="@android:drawable/edit_text"
-                    android:hint="Places disponibles"
+                    android:background="@drawable/bg_input_rounded"
+                    android:hint="1"
                     android:inputType="number"
                     android:paddingStart="16dp"
                     android:paddingEnd="16dp"
+                    android:textColor="#111827"
+                    android:textColorHint="#B8BDC7"
                     android:textSize="14sp" />
 
                 <EditText
                     android:id="@+id/etPricePublish"
                     android:layout_width="0dp"
-                    android:layout_height="56dp"
+                    android:layout_height="match_parent"
+                    android:layout_marginStart="14dp"
                     android:layout_weight="1"
-                    android:layout_marginStart="12dp"
-                    android:background="@android:drawable/edit_text"
-                    android:hint="Prix par place"
+                    android:background="@drawable/bg_input_rounded"
+                    android:hint="0"
                     android:inputType="numberDecimal"
                     android:paddingStart="16dp"
                     android:paddingEnd="16dp"
+                    android:textColor="#111827"
+                    android:textColorHint="#B8BDC7"
                     android:textSize="14sp" />
             </LinearLayout>
 
-            <Button
+            <TextView
                 android:id="@+id/btnPublishTrip"
                 android:layout_width="match_parent"
-                android:layout_height="54dp"
-                android:layout_marginTop="28dp"
-                android:backgroundTint="#4CAF50"
+                android:layout_height="56dp"
+                android:layout_marginTop="24dp"
+                android:background="@drawable/bg_button_green_round"
+                android:gravity="center"
                 android:text="Publier le trajet"
-                android:textAllCaps="false"
                 android:textColor="#FFFFFF"
-                android:textSize="16sp" />
+                android:textSize="16sp"
+                android:textStyle="bold" />
         </LinearLayout>
 
     </LinearLayout>
