@@ -3,43 +3,75 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="horizontal"
-    android:padding="12dp"
-    android:background="@android:color/white"
-    android:layout_marginBottom="8dp">
+    android:paddingVertical="8dp">
 
-    <!-- Numéro et icône -->
-    <TextView
-        android:id="@+id/tvStepNumber"
-        android:layout_width="50dp"
-        android:layout_height="50dp"
-        android:gravity="center"
-        android:textStyle="bold"
-        android:textColor="@android:color/white"
-        android:textSize="14sp"
-        android:layout_marginEnd="12dp"/>
+    <!-- Timeline verticale -->
+    <LinearLayout
+        android:layout_width="32dp"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:gravity="center_horizontal">
 
-    <!-- Instructions et infos -->
+        <!-- Point de départ/ligne supérieure -->
+        <View
+            android:id="@+id/lineTop"
+            android:layout_width="2dp"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:background="#CCCCCC"/>
+
+        <!-- Icône de l'étape -->
+        <TextView
+            android:id="@+id/tvStepIcon"
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:gravity="center"
+            android:textSize="14sp"
+            android:background="@drawable/circle_step_bg"/>
+
+        <!-- Ligne vers étape suivante -->
+        <View
+            android:id="@+id/lineBottom"
+            android:layout_width="2dp"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:background="#CCCCCC"/>
+    </LinearLayout>
+
+    <!-- Contenu de l'étape -->
     <LinearLayout
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_weight="1"
-        android:orientation="vertical">
+        android:orientation="vertical"
+        android:layout_marginStart="12dp">
 
+        <!-- Nom de la ligne/instruction -->
         <TextView
-            android:id="@+id/tvInstructions"
+            android:id="@+id/tvStepTitle"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:textStyle="bold"
             android:textSize="14sp"
-            android:textColor="@android:color/black"/>
+            android:textColor="#000000"/>
 
+        <!-- Détails -->
         <TextView
-            android:id="@+id/tvStepInfo"
+            android:id="@+id/tvStepDetails"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:textSize="12sp"
-            android:textColor="@android:color/darker_gray"
-            android:layout_marginTop="4dp"/>
+            android:textColor="#666666"
+            android:layout_marginTop="2dp"/>
+
+        <!-- Durée de l'étape -->
+        <TextView
+            android:id="@+id/tvStepDuration"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textSize="11sp"
+            android:textColor="#999999"
+            android:layout_marginTop="2dp"/>
     </LinearLayout>
 
 </LinearLayout>

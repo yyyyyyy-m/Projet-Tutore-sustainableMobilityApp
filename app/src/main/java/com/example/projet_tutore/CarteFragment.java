@@ -5,8 +5,8 @@ import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.location.Address;
 import android.location.Geocoder;
-import android.location.Location;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.*;
 import android.widget.*;
 
@@ -15,6 +15,8 @@ import androidx.annotation.Nullable;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.gms.location.*;
 import com.google.android.gms.maps.*;
@@ -32,16 +34,25 @@ import java.util.*;
 public class CarteFragment extends Fragment implements OnMapReadyCallback {
 
     private GoogleMap mMap;
+    private static final String TAG = "CARTE_DEBUG";
     private FusedLocationProviderClient fusedLocationClient;
-
     private BottomSheetBehavior<View> behavior;
 
-    private Button btnOpenSearch, btnConnexion, btnCalculer;
-    private ImageButton bus ;
+    private Button btnCalculer;
     private EditText etDepart, etArrivee;
-    private String travelMode = "driving";
+    private ImageButton btnModeBus, btnModeMarche, btnModeVelo;
 
-    private static final int LOCATION_PERMISSION_REQUEST = 1;
+    private RecyclerView rvTousItineraires;
+    private RouteOptionsAdapter adapter;
+
+    private List<RouteOption> allRoutes = new ArrayList<>();
+
+    private String travelMode = "transit";
+
+    private LatLng originLatLng, destLatLng;
+    private Polyline currentPolyline;
+
+    private int completedRequests = 0;
 
     private final String API_KEY = BuildConfig.MAPS_API_KEY;
 
@@ -55,43 +66,45 @@ public class CarteFragment extends Fragment implements OnMapReadyCallback {
 
     @Override
     public void onViewCreated(@NonNull View v, @Nullable Bundle savedInstanceState) {
-        super.onViewCreated(v, savedInstanceState);
 
-        btnConnexion = v.findViewById(R.id.btnConnexion);
-        btnOpenSearch = v.findViewById(R.id.btnOpenSearch);
         btnCalculer = v.findViewById(R.id.btnCalculerTrajet);
-
         etDepart = v.findViewById(R.id.etDepart);
         etArrivee = v.findViewById(R.id.etArrivee);
 
-        bus = v.findViewById(R.id.btnModeBus);
+        btnModeBus = v.findViewById(R.id.btnModeBus);
+        btnModeMarche = v.findViewById(R.id.btnModeMarche);
+        btnModeVelo = v.findViewById(R.id.btnModeVelo);
+
+        rvTousItineraires = v.findViewById(R.id.rvTousItineraires);
+        rvTousItineraires.setLayoutManager(new LinearLayoutManager(requireContext()));
 
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(requireActivity());
 
         View bottomSheet = v.findViewById(R.id.bottomSheet);
+        behavior = BottomSheetBehavior.from(bottomSheet);
 
-        if (bottomSheet != null) {
-            behavior = BottomSheetBehavior.from(bottomSheet);
-            behavior.setPeekHeight(150);
-            behavior.setFitToContents(true);
-            behavior.setState(BottomSheetBehavior.STATE_COLLAPSED);
-        }
+        btnCalculer.setOnClickListener(view -> {
+            Log.d(TAG, "Bouton calcul cliqué");
+            calculerTousLesItineraires();
+        });
 
-        btnOpenSearch.setOnClickListener(view ->
-                behavior.setState(BottomSheetBehavior.STATE_EXPANDED)
-        );
+        btnModeBus.setOnClickListener(v1 -> {
+            travelMode = "transit";
+            updateButtons(btnModeBus);
+            filtrerRoutes();
+        });
 
-        btnConnexion.setOnClickListener(view ->
-                behavior.setState(BottomSheetBehavior.STATE_EXPANDED)
-        );
+        btnModeMarche.setOnClickListener(v12 -> {
+            travelMode = "walking";
+            updateButtons(btnModeMarche);
+            filtrerRoutes();
+        });
 
-        btnCalculer.setOnClickListener(view -> calculerTrajet());
-
-        v.findViewById(R.id.btnModeBus).setOnClickListener(ve -> travelMode = "transit");
-
-        v.findViewById(R.id.btnModeMarche).setOnClickListener(vi -> travelMode = "walking");
-
-        v.findViewById(R.id.btnModeVelo).setOnClickListener(vo -> travelMode = "bicycling");
+        btnModeVelo.setOnClickListener(v13 -> {
+            travelMode = "bicycling";
+            updateButtons(btnModeVelo);
+            filtrerRoutes();
+        });
 
         SupportMapFragment mapFragment =
                 (SupportMapFragment) getChildFragmentManager().findFragmentById(R.id.map);
@@ -101,115 +114,74 @@ public class CarteFragment extends Fragment implements OnMapReadyCallback {
         }
     }
 
-    // ================= MAP =================
+    private void updateButtons(ImageButton selected) {
+        btnModeBus.setBackgroundColor(Color.WHITE);
+        btnModeMarche.setBackgroundColor(Color.WHITE);
+        btnModeVelo.setBackgroundColor(Color.WHITE);
+        selected.setBackgroundColor(Color.parseColor("#B8E6C1"));
+    }
 
     @Override
     public void onMapReady(@NonNull GoogleMap googleMap) {
         mMap = googleMap;
-
-        LatLng tunis = new LatLng(36.8065, 10.1815);
-        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(tunis, 12f));
-
         checkLocationPermission();
     }
 
     private void checkLocationPermission() {
         if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_FINE_LOCATION)
                 == PackageManager.PERMISSION_GRANTED) {
-            enableMyLocation();
-            getCurrentLocation();
-        } else {
-            requestPermissions(
-                    new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
-                    LOCATION_PERMISSION_REQUEST
-            );
-        }
-    }
-
-    private void enableMyLocation() {
-        if (mMap == null) return;
-
-        if (ActivityCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_FINE_LOCATION)
-                == PackageManager.PERMISSION_GRANTED) {
             mMap.setMyLocationEnabled(true);
+        } else {
+            requestPermissions(new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, 1);
         }
     }
 
-    private void getCurrentLocation() {
-        if (ActivityCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_FINE_LOCATION)
-                != PackageManager.PERMISSION_GRANTED) {
+    private void calculerTousLesItineraires() {
+
+        String depart = etDepart.getText().toString();
+        String arrivee = etArrivee.getText().toString();
+
+        originLatLng = getLocationFromAddress(depart);
+        destLatLng = getLocationFromAddress(arrivee);
+
+        if (originLatLng == null || destLatLng == null) {
+            Toast.makeText(getContext(), "Adresse invalide", Toast.LENGTH_SHORT).show();
             return;
         }
 
-        fusedLocationClient.getLastLocation()
-                .addOnSuccessListener(location -> {
-                    if (location != null) {
-                        LatLng pos = new LatLng(location.getLatitude(), location.getLongitude());
+        completedRequests = 0;
+        allRoutes.clear();
 
-                        mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(pos, 15));
-                        mMap.addMarker(new MarkerOptions().position(pos).title("Ma position"));
-                    }
-                });
+        String[] modes = {"transit", "driving", "walking", "bicycling"};
+
+        for (String mode : modes) {
+            fetchRoute(mode);
+            Log.d(TAG, "Départ: " + depart);
+            Log.d(TAG, "Arrivée: " + arrivee);
+            Log.d(TAG, "Origin: " + originLatLng);
+            Log.d(TAG, "Destination: " + destLatLng);
+        }
     }
 
-    // ================= TRAJET =================
-
-    private void calculerTrajet() {
-
-        String depart = etDepart.getText().toString().trim();
-        String arrivee = etArrivee.getText().toString().trim();
-
-        if (depart.isEmpty() || arrivee.isEmpty()) {
-            Toast.makeText(requireContext(), "Remplis les champs", Toast.LENGTH_SHORT).show();
-            return;
-        }
-
-        LatLng origin = getLocationFromAddress(depart);
-        LatLng dest = getLocationFromAddress(arrivee);
-
-        if (origin == null || dest == null) {
-            Toast.makeText(requireContext(), "Adresse invalide", Toast.LENGTH_SHORT).show();
-            return;
-        }
-
-        drawRoute(origin, dest);
-    }
-
-    private LatLng getLocationFromAddress(String address) {
-        try {
-            Geocoder geocoder = new Geocoder(requireContext());
-            List<Address> list = geocoder.getFromLocationName(address, 1);
-
-            if (list != null && !list.isEmpty()) {
-                Address loc = list.get(0);
-                return new LatLng(loc.getLatitude(), loc.getLongitude());
-            }
-
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-
-        return null;
-    }
-
-    private void drawRoute(LatLng origin, LatLng dest) {
-
+    private void fetchRoute(String mode) {
         String url = "https://maps.googleapis.com/maps/api/directions/json?"
-                + "origin=" + origin.latitude + "," + origin.longitude
-                + "&destination=" + dest.latitude + "," + dest.longitude
-                + "&mode=" + travelMode
-                + (travelMode.equals("transit") ? "&departure_time=now" : "")
+                + "origin=" + originLatLng.latitude + "," + originLatLng.longitude
+                + "&destination=" + destLatLng.latitude + "," + destLatLng.longitude
+                + "&mode=" + mode
+                + "&alternatives=true"
+                + (mode.equals("transit") ? "&departure_time=now" : "")
                 + "&key=" + API_KEY;
 
         new Thread(() -> {
             try {
-                URL u = new URL(url);
-                HttpURLConnection conn = (HttpURLConnection) u.openConnection();
+                Log.d(TAG, "====================");
+                Log.d(TAG, "MODE: " + mode);
+                Log.d(TAG, "URL: " + url);
+
+                HttpURLConnection conn = (HttpURLConnection) new URL(url).openConnection();
                 conn.connect();
 
-                BufferedReader reader = new BufferedReader(
-                        new InputStreamReader(conn.getInputStream()));
-
+                BufferedReader reader = new BufferedReader(new InputStreamReader(conn.getInputStream()));
                 StringBuilder json = new StringBuilder();
                 String line;
 
@@ -217,59 +189,248 @@ public class CarteFragment extends Fragment implements OnMapReadyCallback {
                     json.append(line);
                 }
 
+                // 🔥 LOG JSON COMPLET
+                Log.d(TAG, "JSON RESPONSE: " + json.toString());
+
                 JSONObject data = new JSONObject(json.toString());
+                String status = data.getString("status");
 
-                if (!data.getString("status").equals("OK")) return;
+                Log.d(TAG, "STATUS API: " + status);
 
-                JSONObject route = data.getJSONArray("routes").getJSONObject(0);
-                JSONObject leg = route.getJSONArray("legs").getJSONObject(0);
+                if (status.equals("OK")) {
 
-                String distance = leg.getJSONObject("distance").getString("text");
-                String duration = leg.getJSONObject("duration").getString("text");
+                    JSONArray routes = data.getJSONArray("routes");
+                    Log.d(TAG, "NB ROUTES: " + routes.length());
 
-                String polyline = route.getJSONObject("overview_polyline").getString("points");
+                    for (int i = 0; i < routes.length(); i++) {
 
-                List<LatLng> points = decodePolyline(polyline);
+                        JSONObject route = routes.getJSONObject(i);
+                        JSONObject leg = route.getJSONArray("legs").getJSONObject(0);
 
-                requireActivity().runOnUiThread(() -> {
+                        String duration = leg.getJSONObject("duration").getString("text");
+                        String distance = leg.getJSONObject("distance").getString("text");
 
-                    mMap.clear();
+                        Log.d(TAG, "Route " + i + " -> " + duration + " | " + distance);
 
-                    mMap.addPolyline(new PolylineOptions()
-                            .addAll(points)
-                            .width(10)
-                            .color(Color.BLUE));
+                        String polyline = route.getJSONObject("overview_polyline").getString("points");
+                        List<LatLng> points = decodePolyline(polyline);
 
-                    mMap.addMarker(new MarkerOptions().position(origin).title("Départ"));
-                    mMap.addMarker(new MarkerOptions().position(dest).title("Arrivée"));
-                    LatLngBounds.Builder builder = new LatLngBounds.Builder();
-                    builder.include(origin);
-                    builder.include(dest);
+                        RouteOption r = new RouteOption(mode, duration, distance, "", points);
 
-                    LatLngBounds bounds = builder.build();
+                        List<RouteStep> steps = extractSteps(leg, mode);
+                        r.setSteps(steps);
 
-                    int padding = 150;
+                        if (mode.equals("transit")) {
+                            int transfers = countTransfers(leg);
+                            r.setNumberOfTransfers(transfers);
 
-                    mMap.animateCamera(CameraUpdateFactory.newLatLngBounds(bounds, padding));
+                            if (leg.has("fare")) {
+                                String fare = leg.getJSONObject("fare").getString("text");
+                                r.setPrice(fare);
+                            }
+                        }
 
-                    Toast.makeText(requireContext(),
-                            "Distance: " + distance + " | Durée: " + duration,
-                            Toast.LENGTH_LONG).show();
+                        synchronized (allRoutes) {
+                            allRoutes.add(r);
+                        }
+                    }
 
-
-                });
+                } else {
+                    Log.e(TAG, "❌ ERREUR API: " + status);
+                }
 
             } catch (Exception e) {
-                e.printStackTrace();
+                Log.e(TAG, "❌ ERREUR RESEAU", e);
+            } finally {
+                requireActivity().runOnUiThread(() -> {
+                    completedRequests++;
+                    Log.d(TAG, "REQUÊTES FINIES: " + completedRequests + "/4");
+
+                    if (completedRequests == 4) {
+                        Log.d(TAG, "TOTAL ROUTES RECUPEREES: " + allRoutes.size());
+                        filtrerRoutes();
+                    }
+                });
             }
         }).start();
     }
+    private List<RouteStep> extractSteps(JSONObject leg, String mode) throws Exception {
+        List<RouteStep> steps = new ArrayList<>();
+        JSONArray stepsArray = leg.getJSONArray("steps");
+
+        for (int i = 0; i < stepsArray.length(); i++) {
+            JSONObject stepObj = stepsArray.getJSONObject(i);
+            String travelMode = stepObj.getString("travel_mode");
+            String instructions = stepObj.getString("html_instructions").replaceAll("<[^>]*>", "");
+            String stepDuration = stepObj.getJSONObject("duration").getString("text");
+
+            if (travelMode.equals("TRANSIT")) {
+                JSONObject transitDetails = stepObj.getJSONObject("transit_details");
+                JSONObject line = transitDetails.getJSONObject("line");
+
+                String lineName = line.optString("short_name", line.getString("name"));
+                String headsign = transitDetails.getString("headsign");
+                String departureStop = transitDetails.getJSONObject("departure_stop").getString("name");
+                String arrivalStop = transitDetails.getJSONObject("arrival_stop").getString("name");
+                int numStops = transitDetails.getInt("num_stops");
+                String vehicleType = line.getJSONObject("vehicle").getString("type");
+                String lineColor = line.optString("color", "8ED38A");
+
+                String title = lineName + " - Direction " + headsign;
+                String details = departureStop + " → " + arrivalStop + " (" + numStops + " arrêts)";
+
+                RouteStep step = new RouteStep("TRANSIT", title, details, stepDuration);
+                step.setLineName(lineName);
+                step.setLineColor(lineColor);
+                step.setVehicleType(vehicleType);
+
+                steps.add(step);
+
+            } else if (travelMode.equals("WALKING")) {
+                RouteStep step = new RouteStep("WALKING", "Marche à pied", instructions, stepDuration);
+                steps.add(step);
+            }
+        }
+
+        return steps;
+    }
+
+    // COMPTER LES CORRESPONDANCES
+    private int countTransfers(JSONObject leg) throws Exception {
+        JSONArray steps = leg.getJSONArray("steps");
+        int transitCount = 0;
+
+        for (int i = 0; i < steps.length(); i++) {
+            if (steps.getJSONObject(i).getString("travel_mode").equals("TRANSIT")) {
+                transitCount++;
+            }
+        }
+
+        return Math.max(0, transitCount - 1);
+    }
+    private int parseDuration(String duration) {
+        try {
+            int total = 0;
+
+            if (duration.contains("hour")) {
+                String[] parts = duration.split("hour");
+                total += Integer.parseInt(parts[0].trim()) * 60;
+
+                if (parts.length > 1 && parts[1].contains("min")) {
+                    String mins = parts[1].replaceAll("[^0-9]", "");
+                    if (!mins.isEmpty()) {
+                        total += Integer.parseInt(mins);
+                    }
+                }
+            } else if (duration.contains("min")) {
+                String mins = duration.replaceAll("[^0-9]", "");
+                total = Integer.parseInt(mins);
+            }
+
+            return total;
+
+        } catch (Exception e) {
+            return 9999;
+        }
+    }
+
+    private void filtrerRoutes() {
+
+        List<RouteOption> filtered = new ArrayList<>();
+
+        for (RouteOption r : allRoutes) {
+            if (r.getMode().equals(travelMode)) {
+                filtered.add(r);
+            }
+        }
+
+        if (filtered.isEmpty()) {
+            Toast.makeText(getContext(), "Aucun trajet trouvé", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        // 🔥 TRI PAR DURÉE (plus rapide en premier)
+        Collections.sort(filtered, (r1, r2) ->
+                parseDuration(r1.getDuration()) - parseDuration(r2.getDuration())
+        );
+
+        // 🔥 GARDER LES 5 MEILLEURS
+        if (filtered.size() > 5) {
+            filtered = filtered.subList(0, 5);
+        }
+
+        adapter = new RouteOptionsAdapter(filtered, this::afficherRoute);
+        rvTousItineraires.setAdapter(adapter);
+
+        // 🔥 afficher automatiquement le meilleur trajet
+        afficherRoute(filtered.get(0));
+    }
+
+    private void afficherRoute(RouteOption route) {
+
+        mMap.clear();
+
+        int color;
+
+        switch (route.getMode()) {
+            case "transit":
+                color = Color.parseColor("#4CAF50");
+                break;
+            case "walking":
+                color = Color.parseColor("#FF9800");
+                break;
+            case "bicycling":
+                color = Color.parseColor("#2196F3");
+                break;
+            case "driving":
+                color = Color.parseColor("#F44336");
+                break;
+            default:
+                color = Color.BLUE;
+        }
+
+        currentPolyline = mMap.addPolyline(new PolylineOptions()
+                .addAll(route.getPolylinePoints())
+                .width(12)
+                .color(color));
+
+        mMap.addMarker(new MarkerOptions().position(originLatLng).title("Départ"));
+        mMap.addMarker(new MarkerOptions().position(destLatLng).title("Arrivée"));
+
+        LatLngBounds.Builder builder = new LatLngBounds.Builder();
+
+        for (LatLng p : route.getPolylinePoints()) {
+            builder.include(p);
+        }
+
+        mMap.animateCamera(CameraUpdateFactory.newLatLngBounds(builder.build(), 150));
+
+        Toast.makeText(getContext(),
+                route.getMode() + " • " + route.getDuration(),
+                Toast.LENGTH_SHORT).show();
+    }
+
+    private LatLng getLocationFromAddress(String address) {
+        try {
+            Geocoder geocoder = new Geocoder(requireContext());
+            List<Address> list = geocoder.getFromLocationName(address, 1);
+
+            if (!list.isEmpty()) {
+                Address loc = list.get(0);
+                return new LatLng(loc.getLatitude(), loc.getLongitude());
+            }
+        } catch (Exception ignored) {}
+
+        return null;
+    }
 
     private List<LatLng> decodePolyline(String encoded) {
+
         List<LatLng> poly = new ArrayList<>();
         int index = 0, lat = 0, lng = 0;
 
         while (index < encoded.length()) {
+
             int b, shift = 0, result = 0;
 
             do {
