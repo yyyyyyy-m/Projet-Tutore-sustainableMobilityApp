@@ -17,26 +17,35 @@ public class Trajet {
     public double price;
     public String status;
 
-    public Trajet(){
+    public double departLat;
+    public double departLng;
+    public double destinationLat;
+    public double destinationLng;
 
-    }
+    public String routePolyline;
+    public String routeDistance;
+    public String routeDuration;
+    public String travelMode;
+
+    public Trajet() {}
 
     public Trajet(String driverName, String initials,
                   String depart, String destination,
                   String departLower, String destinationLower,
                   String date, String time,
                   int places, double price,
-                  String status){
-    this.driverName = driverName;
-    this.initials = initials;
-    this.depart = depart;
-    this.destination = destination;
-    this.departLower = departLower;
-    this.destinationLower = destinationLower;
-    this.date = date;
-    this.time = time;
-    this.places = places;
-    this.price = price;
-    this.status = status;
+                  String status) {
+
+        this.driverName = driverName;
+        this.initials = initials;
+        this.depart = depart;
+        this.destination = destination;
+        this.departLower = departLower;
+        this.destinationLower = destinationLower;
+        this.date = date;
+        this.time = time;
+        this.places = places;
+        this.price = price;
+        this.status = status;
     }
 }
