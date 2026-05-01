@@ -18,12 +18,12 @@ public class ProfilFragment extends Fragment {
     private FirebaseAuth mAuth;
     private Button btnAction;
 
-    // Éléments à cacher/afficher + remplir le nom
+    // Éléments XML
     private LinearLayout statsLayout, compteLayout, activiteLayout;
-    private TextView tvUsername, tvUserEmail;
+    private TextView tvUserEmail;
 
     public ProfilFragment() {
-        // constructeur vide obligatoire
+
     }
 
     @Override
@@ -31,63 +31,61 @@ public class ProfilFragment extends Fragment {
                              Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_profil, container, false);
 
-        // Initialiser Firebase Auth
+        // Initialisation Firebase
         mAuth = FirebaseAuth.getInstance();
-        FirebaseUser currentUser = mAuth.getCurrentUser();
 
-        // Récupérer le bouton
+        // Récupération des vues
         btnAction = view.findViewById(R.id.logout);
-
-        // Récupérer les layouts à CACHER si non connecté
         statsLayout = view.findViewById(R.id.stats_layout);
         compteLayout = view.findViewById(R.id.compte_layout);
         activiteLayout = view.findViewById(R.id.activite_layout);
-
-
         tvUserEmail = view.findViewById(R.id.tv_user_email);
 
-        // Vérification connexion
+        // Mise à jour de l'interface
+        FirebaseUser currentUser = mAuth.getCurrentUser();
+        updateUI(currentUser);
+
+        return view;
+    }
+
+    // Gère l'affichage selon connexion
+    private void updateUI(FirebaseUser currentUser) {
         if (currentUser == null) {
-            // UTILISATEUR NON CONNECTÉ : CACHER TOUT SAUF LE BOUTON
-            btnAction.setText("S'inscrire");
+            // Pas connecté
+            btnAction.setText("Se connecter");
             statsLayout.setVisibility(View.GONE);
             compteLayout.setVisibility(View.GONE);
             activiteLayout.setVisibility(View.GONE);
 
             btnAction.setOnClickListener(v -> {
-                Intent intent = new Intent(getActivity(), InscriptionActivity.class);
+                Intent intent = new Intent(getActivity(), LoginActivity.class);
                 startActivity(intent);
             });
 
         } else {
-            // UTILISATEUR CONNECTÉ : AFFICHER TOUT + REMPLIR NOM/EMAIL FIREBASE
+            // Connecté
             btnAction.setText("Déconnecter");
             statsLayout.setVisibility(View.VISIBLE);
             compteLayout.setVisibility(View.VISIBLE);
             activiteLayout.setVisibility(View.VISIBLE);
 
-            // Remplir automatiquement le profil depuis Firebase
-            String email = currentUser.getEmail();
-            String displayName = currentUser.getDisplayName();
+            // Affichage email
+            tvUserEmail.setText(currentUser.getEmail());
 
-            // Si le nom existe dans Firebase, on l'affiche, sinon l'email
-            if (displayName != null && !displayName.isEmpty()) {
-                tvUsername.setText(displayName);
-            } else {
-                tvUsername.setText("Utilisateur");
-            }
-
-            tvUserEmail.setText(email);
-
-            // Action déconnexion
+            // Déconnexion
             btnAction.setOnClickListener(v -> {
                 mAuth.signOut();
                 Intent intent = new Intent(getActivity(), LoginActivity.class);
                 startActivity(intent);
-                getActivity().finish();
+                if (getActivity() != null) getActivity().finish();
             });
         }
+    }
 
-        return view;
+    // Actualise la page quand on revient
+    @Override
+    public void onResume() {
+        super.onResume();
+        updateUI(mAuth.getCurrentUser());
     }
 }
