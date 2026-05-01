@@ -105,6 +105,31 @@ public class CarteFragment extends Fragment implements OnMapReadyCallback {
             updateButtons(btnModeVelo);
             filtrerRoutes();
         });
+        ArrayAdapter<String> adapterDepart =
+                new ArrayAdapter<>(requireContext(), android.R.layout.simple_dropdown_item_1line);
+
+        ArrayAdapter<String> adapterArrivee =
+                new ArrayAdapter<>(requireContext(), android.R.layout.simple_dropdown_item_1line);
+
+        ((AutoCompleteTextView) etDepart).setAdapter(adapterDepart);
+        ((AutoCompleteTextView) etArrivee).setAdapter(adapterArrivee);
+        etDepart.addTextChangedListener(new SimpleTextWatcher() {
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                if (s.length() > 3) {
+                    fetchAddressSuggestionsOSM(s.toString(), adapterDepart);
+                }
+            }
+        });
+
+        etArrivee.addTextChangedListener(new SimpleTextWatcher() {
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                if (s.length() > 3) {
+                    fetchAddressSuggestionsOSM(s.toString(), adapterArrivee);
+                }
+            }
+        });
 
         SupportMapFragment mapFragment =
                 (SupportMapFragment) getChildFragmentManager().findFragmentById(R.id.map);
@@ -112,6 +137,7 @@ public class CarteFragment extends Fragment implements OnMapReadyCallback {
         if (mapFragment != null) {
             mapFragment.getMapAsync(this);
         }
+
     }
 
     private void updateButtons(ImageButton selected) {
@@ -119,6 +145,55 @@ public class CarteFragment extends Fragment implements OnMapReadyCallback {
         btnModeMarche.setBackgroundColor(Color.WHITE);
         btnModeVelo.setBackgroundColor(Color.WHITE);
         selected.setBackgroundColor(Color.parseColor("#B8E6C1"));
+    }
+    private void fetchAddressSuggestionsOSM(String query, ArrayAdapter<String> adapter) {
+
+        String url = "https://nominatim.openstreetmap.org/search?q="
+                + query.replace(" ", "%20")
+                + "&format=json&addressdetails=1&limit=10";
+
+        new Thread(() -> {
+            try {
+                HttpURLConnection conn = (HttpURLConnection) new URL(url).openConnection();
+
+                // 🔥 OBLIGATOIRE avec OSM (sinon blocage)
+                conn.setRequestProperty("User-Agent", "Android-App");
+
+                conn.connect();
+
+                BufferedReader reader = new BufferedReader(
+                        new InputStreamReader(conn.getInputStream())
+                );
+
+                StringBuilder json = new StringBuilder();
+                String line;
+
+                while ((line = reader.readLine()) != null) {
+                    json.append(line);
+                }
+
+                JSONArray results = new JSONArray(json.toString());
+
+                List<String> suggestions = new ArrayList<>();
+
+                for (int i = 0; i < results.length(); i++) {
+                    JSONObject obj = results.getJSONObject(i);
+
+                    String displayName = obj.getString("display_name");
+
+                    suggestions.add(displayName);
+                }
+
+                requireActivity().runOnUiThread(() -> {
+                    adapter.clear();
+                    adapter.addAll(suggestions);
+                    adapter.notifyDataSetChanged();
+                });
+
+            } catch (Exception e) {
+                Log.e(TAG, "Erreur OSM autocomplete", e);
+            }
+        }).start();
     }
 
     @Override
@@ -491,4 +566,14 @@ public class CarteFragment extends Fragment implements OnMapReadyCallback {
 
         return poly;
     }
+}
+// Classe utilitaire pour éviter de réécrire les méthodes inutiles
+abstract class SimpleTextWatcher implements android.text.TextWatcher {
+
+    @Override
+    public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+
+    @Override
+    public void afterTextChanged(android.text.Editable s) {}
+
 }
