@@ -44,12 +44,12 @@
                 android:layout_marginStart="24dp"
                 android:layout_marginTop="8dp"/>
 
-            <!-- Nom utilisateur -->
+            <!-- Email utilisateur -->
             <TextView
-                android:id="@+id/tv_username"
+                android:id="@+id/tv_user_email"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Dimitri Marcelle"
+                android:text="Non connecté"
                 android:textColor="@android:color/white"
                 android:textSize="19sp"
                 android:textStyle="bold"
@@ -58,22 +58,12 @@
                 app:layout_constraintBottom_toBottomOf="@id/iv_profile_pic"
                 android:layout_marginStart="12dp"/>
 
-            <!-- Email utilisateur -->
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="dimitri@example.com"
-                android:textColor="@android:color/white"
-                android:textSize="13sp"
-                android:alpha="0.9"
-                app:layout_constraintStart_toStartOf="@id/tv_username"
-                app:layout_constraintTop_toBottomOf="@id/tv_username"
-                android:layout_marginTop="4dp"/>
 
         </androidx.constraintlayout.widget.ConstraintLayout>
 
 
         <LinearLayout
+            android:id="@+id/stats_layout"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
@@ -183,6 +173,7 @@
         </LinearLayout>
 
         <LinearLayout
+            android:id="@+id/compte_layout"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
@@ -272,6 +263,7 @@
         </LinearLayout>
 
         <LinearLayout
+            android:id="@+id/activite_layout"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
