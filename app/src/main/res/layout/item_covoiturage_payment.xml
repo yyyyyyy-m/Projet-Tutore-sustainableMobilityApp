@@ -71,16 +71,6 @@
             android:textColor="#4B5563"
             android:textSize="14sp" />
 
-        <TextView
-            android:id="@+id/tvPoints"
-            android:layout_width="100dp"
-            android:layout_height="54dp"
-            android:layout_marginStart="14dp"
-            android:background="@drawable/bg_pill_green_light"
-            android:gravity="center"
-            android:text="+25\npoints"
-            android:textColor="#218838"
-            android:textSize="14sp" />
     </LinearLayout>
 
 </LinearLayout>

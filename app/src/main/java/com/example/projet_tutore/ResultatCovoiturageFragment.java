@@ -17,6 +17,10 @@ import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 
 import java.util.Locale;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
+import java.util.Date;
 
 public class ResultatCovoiturageFragment extends Fragment {
 
@@ -131,6 +135,7 @@ public class ResultatCovoiturageFragment extends Fragment {
                         tvSectionToday.setVisibility(View.GONE);
                     } else {
                         tvResultCount.setText(count + " conducteur(s) avec correspondance d’itinéraire !");
+                        tvSectionToday.setText(formatDateLabel(date));
                         tvSectionToday.setVisibility(View.VISIBLE);
                     }
                 })
@@ -205,7 +210,7 @@ public class ResultatCovoiturageFragment extends Fragment {
         tvPrice.setText(formatPrice(trajet.price) + "€\npar place");
 
         tvDeparture.setText(trajet.depart);
-        tvTime.setText("Aujourd’hui • " + trajet.time);
+        tvTime.setText(formatDateLabel(trajet.date) + " • " + trajet.time);
         tvDestination.setText(trajet.destination);
 
         tvPlaces.setText(trajet.places + "\nplaces");
@@ -237,4 +242,75 @@ public class ResultatCovoiturageFragment extends Fragment {
         }
         return String.valueOf(price);
     }
+
+    private String formatDateLabel(String rawDate) {
+        if (rawDate == null || rawDate.trim().isEmpty()) {
+            return "";
+        }
+
+        Date tripDate = parseDate(rawDate.trim());
+
+        if (tripDate == null) {
+            return rawDate;
+        }
+
+        Calendar trip = Calendar.getInstance();
+        trip.setTime(tripDate);
+        clearTime(trip);
+
+        Calendar today = Calendar.getInstance();
+        clearTime(today);
+
+        Calendar tomorrow = (Calendar) today.clone();
+        tomorrow.add(Calendar.DAY_OF_YEAR, 1);
+
+        Calendar yesterday = (Calendar) today.clone();
+        yesterday.add(Calendar.DAY_OF_YEAR, -1);
+
+        if (isSameDay(trip, today)) {
+            return "Aujourd’hui";
+        }
+
+        if (isSameDay(trip, tomorrow)) {
+            return "Demain";
+        }
+
+        if (isSameDay(trip, yesterday)) {
+            return "Hier";
+        }
+
+        return new SimpleDateFormat("dd/MM/yyyy", Locale.FRANCE).format(tripDate);
+    }
+
+    private Date parseDate(String rawDate) {
+        String[] formats = {
+                "dd/MM/yyyy",
+                "d/M/yyyy",
+                "yyyy-MM-dd"
+        };
+
+        for (String format : formats) {
+            try {
+                SimpleDateFormat sdf = new SimpleDateFormat(format, Locale.FRANCE);
+                sdf.setLenient(false);
+                return sdf.parse(rawDate);
+            } catch (ParseException ignored) {
+            }
+        }
+
+        return null;
+    }
+
+    private void clearTime(Calendar calendar) {
+        calendar.set(Calendar.HOUR_OF_DAY, 0);
+        calendar.set(Calendar.MINUTE, 0);
+        calendar.set(Calendar.SECOND, 0);
+        calendar.set(Calendar.MILLISECOND, 0);
+    }
+
+    private boolean isSameDay(Calendar a, Calendar b) {
+        return a.get(Calendar.YEAR) == b.get(Calendar.YEAR)
+                && a.get(Calendar.DAY_OF_YEAR) == b.get(Calendar.DAY_OF_YEAR);
+    }
+
 }
