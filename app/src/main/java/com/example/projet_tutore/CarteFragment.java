@@ -125,6 +125,38 @@ public class CarteFragment extends Fragment implements OnMapReadyCallback {
     public void onMapReady(@NonNull GoogleMap googleMap) {
         mMap = googleMap;
         checkLocationPermission();
+        getCurrentLocation(); // Chargement carte = Géolocalise
+    }
+    private void getCurrentLocation() {
+
+        if (ActivityCompat.checkSelfPermission(requireContext(),
+                Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            return;
+        }
+
+        fusedLocationClient.getLastLocation()
+                .addOnSuccessListener(location -> {
+
+                    if (location != null) {
+
+                        double lat = location.getLatitude();
+                        double lng = location.getLongitude();
+
+                        Log.d(TAG, "POSITION ACTUELLE: " + lat + ", " + lng);
+
+                        originLatLng = new LatLng(lat, lng);
+
+                        // Effet de notre caméra
+                        mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(originLatLng, 14));
+
+                        Toast.makeText(getContext(),
+                                "Position récupérée",
+                                Toast.LENGTH_SHORT).show();
+
+                    } else {
+                        Log.e(TAG, "Localisation null");
+                    }
+                });
     }
 
     private void checkLocationPermission() {
@@ -141,7 +173,11 @@ public class CarteFragment extends Fragment implements OnMapReadyCallback {
         String depart = etDepart.getText().toString();
         String arrivee = etArrivee.getText().toString();
 
-        originLatLng = getLocationFromAddress(depart);
+        if (depart.isEmpty()) {
+            getCurrentLocation();
+        } else {
+            originLatLng = getLocationFromAddress(depart);
+        }
         destLatLng = getLocationFromAddress(arrivee);
 
         if (originLatLng == null || destLatLng == null) {
@@ -349,12 +385,10 @@ public class CarteFragment extends Fragment implements OnMapReadyCallback {
             return;
         }
 
-        // 🔥 TRI PAR DURÉE (plus rapide en premier)
         Collections.sort(filtered, (r1, r2) ->
                 parseDuration(r1.getDuration()) - parseDuration(r2.getDuration())
         );
 
-        // 🔥 GARDER LES 5 MEILLEURS
         if (filtered.size() > 5) {
             filtered = filtered.subList(0, 5);
         }
@@ -362,7 +396,7 @@ public class CarteFragment extends Fragment implements OnMapReadyCallback {
         adapter = new RouteOptionsAdapter(filtered, this::afficherRoute);
         rvTousItineraires.setAdapter(adapter);
 
-        // 🔥 afficher automatiquement le meilleur trajet
+
         afficherRoute(filtered.get(0));
     }
 
