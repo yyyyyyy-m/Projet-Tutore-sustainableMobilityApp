@@ -17,6 +17,18 @@
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintVertical_bias="0.0" />
 
+    <ImageView
+        android:id="@+id/btnBack"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:layout_marginStart="16dp"
+        android:layout_marginTop="48dp"
+        android:contentDescription="Retour"
+        android:padding="8dp"
+        android:src="@drawable/fleche_retour"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
     <TextView
         android:id="@+id/tvTitle"
         android:layout_width="wrap_content"
@@ -35,70 +47,6 @@
         android:layout_marginTop="80dp"/>
 
 
-    <EditText
-        android:id="@+id/signupEmail"
-        android:layout_width="0dp"
-        android:layout_height="48dp"
-        android:layout_marginHorizontal="32dp"
-        android:layout_marginTop="4dp"
-        android:background="@drawable/bg_edittext"
-        android:hint="Entrez votre email"
-        android:inputType="textEmailAddress"
-        android:padding="12dp"
-        android:textColor="@color/vert_fon"
-
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/labelEmail" />
-
-    <EditText
-        android:id="@+id/mdp"
-        android:layout_width="0dp"
-        android:layout_height="48dp"
-        android:layout_marginHorizontal="32dp"
-        android:layout_marginTop="40dp"
-        android:background="@drawable/bg_edittext"
-        android:hint="Entrez votre mot de passe"
-        android:inputType="textPassword"
-        android:padding="12dp"
-        android:textColor="@color/vert_fon"
-        app:layout_constraintEnd_toEndOf="@+id/bgImage"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/signupEmail" />
-
-    <EditText
-        android:id="@+id/confirmMdp"
-        android:layout_width="0dp"
-        android:layout_height="48dp"
-        android:layout_marginHorizontal="32dp"
-        android:layout_marginTop="40dp"
-        android:background="@drawable/bg_edittext"
-        android:hint="Confirmez votre mot de passe"
-        android:inputType="textPassword"
-
-        android:padding="12dp"
-        android:textColor="@color/vert_fon"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/mdp" />
-
-    <com.google.android.material.button.MaterialButton
-        android:id="@+id/signup"
-        android:layout_width="240dp"
-        android:layout_height="48dp"
-        android:layout_marginHorizontal="32dp"
-        android:layout_marginTop="124dp"
-        android:text="S'inscrire"
-        android:textColor="#1B5E20"
-        android:textStyle="bold"
-        app:backgroundTint="@color/lime"
-
-        app:cornerRadius="24dp"
-        app:layout_constraintEnd_toEndOf="@+id/bgImage"
-        app:layout_constraintHorizontal_bias="0.497"
-        app:layout_constraintStart_toStartOf="@+id/bgImage"
-        app:layout_constraintTop_toBottomOf="@+id/confirmMdp" />
-
     <TextView
         android:id="@+id/labelEmail"
         android:layout_width="wrap_content"
@@ -114,6 +62,21 @@
         android:textSize="18sp"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/tvTitle" />
+
+    <EditText
+        android:id="@+id/signupEmail"
+        android:layout_width="0dp"
+        android:layout_height="48dp"
+        android:layout_marginHorizontal="32dp"
+        android:layout_marginTop="4dp"
+        android:background="@drawable/bg_edittext"
+        android:hint="Entrez votre email"
+        android:inputType="textEmailAddress"
+        android:padding="12dp"
+        android:textColor="@color/vert_fon"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/labelEmail" />
 
     <TextView
         android:id="@+id/labelMdp"
@@ -131,6 +94,21 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/signupEmail" />
 
+    <EditText
+        android:id="@+id/mdp"
+        android:layout_width="0dp"
+        android:layout_height="48dp"
+        android:layout_marginHorizontal="32dp"
+        android:layout_marginTop="4dp"
+        android:background="@drawable/bg_edittext"
+        android:hint="Entrez votre mot de passe"
+        android:inputType="textPassword"
+        android:padding="12dp"
+        android:textColor="@color/vert_fon"
+        app:layout_constraintEnd_toEndOf="@+id/bgImage"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/labelMdp" />
+
     <TextView
         android:id="@+id/labelConfirmMdp"
         android:layout_width="wrap_content"
@@ -146,6 +124,36 @@
         android:shadowDy="0"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/mdp" />
+
+    <EditText
+        android:id="@+id/confirmMdp"
+        android:layout_width="0dp"
+        android:layout_height="48dp"
+        android:layout_marginHorizontal="32dp"
+        android:layout_marginTop="4dp"
+        android:background="@drawable/bg_edittext"
+        android:hint="Confirmez votre mot de passe"
+        android:inputType="textPassword"
+        android:padding="12dp"
+        android:textColor="@color/vert_fon"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/labelConfirmMdp" />
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/signup"
+        android:layout_width="240dp"
+        android:layout_height="48dp"
+        android:layout_marginHorizontal="32dp"
+        android:layout_marginTop="40dp"
+        android:text="S'inscrire"
+        android:textColor="#1B5E20"
+        android:textStyle="bold"
+        app:backgroundTint="@color/lime"
+        app:cornerRadius="24dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/confirmMdp" />
 
 
 </androidx.constraintlayout.widget.ConstraintLayout>

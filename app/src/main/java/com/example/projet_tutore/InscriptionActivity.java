@@ -5,15 +5,18 @@ import android.content.pm.ActivityInfo;
 import android.os.Bundle;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.google.firebase.auth.FirebaseAuth;
+
 public class InscriptionActivity extends AppCompatActivity {
 
     private EditText emailEditText, passwordEditText, confirmMdpET;
     private Button signupButton;
+    private ImageView btnBack;
     private FirebaseAuth auth;
 
     @Override
@@ -31,8 +34,12 @@ public class InscriptionActivity extends AppCompatActivity {
         passwordEditText = findViewById(R.id.mdp);
         confirmMdpET = findViewById(R.id.confirmMdp);
         signupButton = findViewById(R.id.signup);
+        btnBack = findViewById(R.id.btnBack);
 
         signupButton.setOnClickListener(v -> inscription());
+
+        // Action retour
+        btnBack.setOnClickListener(v -> finish());
     }
 
     private void inscription() {

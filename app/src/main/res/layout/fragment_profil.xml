@@ -317,7 +317,6 @@
 
         </LinearLayout>
 
-        <!-- BOUTON DECONNECTER -->
         <Button
             android:id="@+id/logout"
             android:layout_width="match_parent"
