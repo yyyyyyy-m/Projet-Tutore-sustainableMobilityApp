@@ -189,7 +189,7 @@ public class CarteFragment extends Fragment implements OnMapReadyCallback {
                     json.append(line);
                 }
 
-                // 🔥 LOG JSON COMPLET
+                // LOG JSON COMPLET
                 Log.d(TAG, "JSON RESPONSE: " + json.toString());
 
                 JSONObject data = new JSONObject(json.toString());
@@ -236,11 +236,11 @@ public class CarteFragment extends Fragment implements OnMapReadyCallback {
                     }
 
                 } else {
-                    Log.e(TAG, "❌ ERREUR API: " + status);
+                    Log.e(TAG, " ERREUR API: " + status);
                 }
 
             } catch (Exception e) {
-                Log.e(TAG, "❌ ERREUR RESEAU", e);
+                Log.e(TAG, " ERREUR RESEAU", e);
             } finally {
                 requireActivity().runOnUiThread(() -> {
                     completedRequests++;
