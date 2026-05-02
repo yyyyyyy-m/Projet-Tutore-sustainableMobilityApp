@@ -45,6 +45,8 @@ public class PartageFragment extends Fragment {
 
     private FirebaseFirestore db;
 
+    private String currentMode = "search";
+
     private double departSearchLat = Double.NaN;
     private double departSearchLng = Double.NaN;
     private double destinationSearchLat = Double.NaN;
@@ -87,6 +89,8 @@ public class PartageFragment extends Fragment {
 
         Bundle args = getArguments();
         if (args != null && "publish".equals(args.getString("mode"))) {
+            showPublishMode();
+        } else if ("publish".equals(currentMode)) {
             showPublishMode();
         } else {
             showSearchMode();
@@ -395,6 +399,8 @@ public class PartageFragment extends Fragment {
     }
 
     private void openDrivingRouteForPublish() {
+        currentMode = "publish";
+
         Bundle bundle = new Bundle();
 
         bundle.putString("origin", etDepartPublish.getText().toString().trim());
@@ -644,17 +650,25 @@ public class PartageFragment extends Fragment {
         etDepartPublish.setFocusable(false);
         etDestinationPublish.setFocusable(false);
 
-        etDepartSearch.setOnClickListener(v ->
-                openMapPicker("departSearch", etDepartSearch.getText().toString().trim()));
+        etDepartSearch.setOnClickListener(v -> {
+            currentMode = "search";
+            openMapPicker("departSearch", etDepartSearch.getText().toString().trim());
+        });
 
-        etDestinationSearch.setOnClickListener(v ->
-                openMapPicker("destinationSearch", etDestinationSearch.getText().toString().trim()));
+        etDestinationSearch.setOnClickListener(v -> {
+            currentMode = "search";
+            openMapPicker("destinationSearch", etDestinationSearch.getText().toString().trim());
+        });
 
-        etDepartPublish.setOnClickListener(v ->
-                openMapPicker("departPublish", etDepartPublish.getText().toString().trim()));
+        etDepartPublish.setOnClickListener(v -> {
+            currentMode = "publish";
+            openMapPicker("departPublish", etDepartPublish.getText().toString().trim());
+        });
 
-        etDestinationPublish.setOnClickListener(v ->
-                openMapPicker("destinationPublish", etDestinationPublish.getText().toString().trim()));
+        etDestinationPublish.setOnClickListener(v -> {
+            currentMode = "publish";
+            openMapPicker("destinationPublish", etDestinationPublish.getText().toString().trim());
+        });
     }
 
     private void openMapPicker(String target, String initialAddress) {
@@ -678,33 +692,33 @@ public class PartageFragment extends Fragment {
 
                     switch (target) {
                         case "departSearch":
-                            showSearchMode();
                             etDepartSearch.setText(address);
                             departSearchLat = lat;
                             departSearchLng = lng;
+                            showSearchMode();
                             break;
 
                         case "destinationSearch":
-                            showSearchMode();
                             etDestinationSearch.setText(address);
                             destinationSearchLat = lat;
                             destinationSearchLng = lng;
+                            showSearchMode();
                             break;
 
                         case "departPublish":
-                            showPublishMode();
                             etDepartPublish.setText(address);
                             departPublishLat = lat;
                             departPublishLng = lng;
                             resetConfirmedRoute();
+                            showPublishMode();
                             break;
 
                         case "destinationPublish":
-                            showPublishMode();
                             etDestinationPublish.setText(address);
                             destinationPublishLat = lat;
                             destinationPublishLng = lng;
                             resetConfirmedRoute();
+                            showPublishMode();
                             break;
                     }
                 }
@@ -716,6 +730,8 @@ public class PartageFragment extends Fragment {
     }
 
     private void showSearchMode() {
+        currentMode = "search";
+
         layoutSearch.setVisibility(View.VISIBLE);
         layoutPublish.setVisibility(View.GONE);
 
@@ -727,6 +743,8 @@ public class PartageFragment extends Fragment {
     }
 
     private void showPublishMode() {
+        currentMode = "publish";
+
         layoutSearch.setVisibility(View.GONE);
         layoutPublish.setVisibility(View.VISIBLE);
 

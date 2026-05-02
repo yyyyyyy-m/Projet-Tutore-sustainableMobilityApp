@@ -46,4 +46,16 @@
         android:id="@+id/itinerairesUtilisateursFragment"
         android:name="com.example.projet_tutore.ItinerairesUtilisateursFragment"
         android:label="Itinéraires utilisateurs" />
+
+    <fragment
+        android:id="@+id/mapPickerFragment"
+        android:name="com.example.projet_tutore.MapPickerFragment"
+        android:label="Choisir une adresse" />
+
+    <fragment
+        android:id="@+id/drivingRouteFragment"
+        android:name="com.example.projet_tutore.DrivingRouteFragment"
+        android:label="Itinéraire voiture" />
+
+
 </navigation>
