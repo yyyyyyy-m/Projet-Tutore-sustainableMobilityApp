@@ -26,6 +26,8 @@ import com.google.android.material.bottomsheet.BottomSheetBehavior;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
+import com.google.firebase.firestore.FirebaseFirestore; //test
+
 import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.URL;
@@ -35,6 +37,7 @@ public class CarteFragment extends Fragment implements OnMapReadyCallback {
 
     private GoogleMap mMap;
     private static final String TAG = "CARTE_DEBUG";
+    private FirebaseFirestore db; //test
     private FusedLocationProviderClient fusedLocationClient;
     private BottomSheetBehavior<View> behavior;
 
@@ -79,6 +82,7 @@ public class CarteFragment extends Fragment implements OnMapReadyCallback {
         rvTousItineraires.setLayoutManager(new LinearLayoutManager(requireContext()));
 
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(requireActivity());
+        db = FirebaseFirestore.getInstance();
 
         View bottomSheet = v.findViewById(R.id.bottomSheet);
         behavior = BottomSheetBehavior.from(bottomSheet);

@@ -1,0 +1,16 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="50dp"
+    android:height="50dp"
+    android:viewportWidth="32"
+    android:viewportHeight="32">
+
+    <group
+        android:pivotX="16"
+        android:pivotY="16"
+        android:rotation="0">
+
+        <path
+            android:fillColor="#111111"
+            android:pathData="M11,7 L25,16 L11,25 Z" />
+    </group>
+</vector>

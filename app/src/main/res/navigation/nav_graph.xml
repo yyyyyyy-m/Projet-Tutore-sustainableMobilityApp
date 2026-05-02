@@ -42,4 +42,8 @@
         android:name="com.example.projet_tutore.ActivitesCovoiturageFragment"
         android:label="Mes activités" />
 
+    <fragment
+        android:id="@+id/itinerairesUtilisateursFragment"
+        android:name="com.example.projet_tutore.ItinerairesUtilisateursFragment"
+        android:label="Itinéraires utilisateurs" />
 </navigation>
