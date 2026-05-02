@@ -68,14 +68,24 @@ public class ItinerairesUtilisateursFragment extends Fragment implements OnMapRe
     private TextView tvRecordTimer;
     private TextView tvDistanceMeters;
     private TextView tvGpsPoints;
-    private TextView tvEcoPoints;
+    private TextView tvCo2Saved;
+    private TextView tvGpsStatus;
+    private TextView tvRecordMode;
+    private TextView tvChangeMode;
 
     private boolean hasStarted = false;
     private boolean isRecording = false;
+    private String selectedRecordMode = "walking";
 
     private List<LatLng> recordedPoints = new ArrayList<>();
     private Polyline recordedPolyline;
     private LocationCallback recordingLocationCallback;
+    private Location lastAcceptedLocation;
+    private long lastAcceptedTimeMillis = 0;
+
+    private static final float MIN_DISTANCE_METERS = 12f;
+    private static final float MAX_ACCEPTED_ACCURACY_METERS = 25f;
+    private static final float MAX_WALKING_SPEED_MPS = 3.0f; // ~10.8 km/h
 
     private Handler timerHandler = new Handler(Looper.getMainLooper());
     private long startTimeMillis = 0;
@@ -133,11 +143,23 @@ public class ItinerairesUtilisateursFragment extends Fragment implements OnMapRe
         tvRecordTimer = view.findViewById(R.id.tvRecordTimer);
         tvDistanceMeters = view.findViewById(R.id.tvDistanceMeters);
         tvGpsPoints = view.findViewById(R.id.tvGpsPoints);
-        tvEcoPoints = view.findViewById(R.id.tvEcoPoints);
+        tvCo2Saved = view.findViewById(R.id.tvCo2Saved);
+        tvGpsStatus = view.findViewById(R.id.tvGpsStatus);
+        tvRecordMode = view.findViewById(R.id.tvRecordMode);
+        tvChangeMode = view.findViewById(R.id.tvChangeMode);
 
         // Au début, le bouton sert à démarrer l'enregistrement.
         btnPauseRecord.setImageResource(R.drawable.ic_play_tilt_black);
         btnSendRoute.setAlpha(0.6f);
+        updateRecordModeText();
+    }
+
+    private void updateRecordModeText() {
+        if (selectedRecordMode.equals("bicycling")) {
+            tvRecordMode.setText("Mode: À vélo");
+        } else {
+            tvRecordMode.setText("Mode: À pied");
+        }
     }
 
     private void setupActions() {
@@ -154,11 +176,38 @@ public class ItinerairesUtilisateursFragment extends Fragment implements OnMapRe
         btnCancelRecord.setOnClickListener(v -> cancelRecording());
 
         btnSendRoute.setOnClickListener(v -> showPublishDialog());
+        tvChangeMode.setOnClickListener(v -> showModeDialog());
+    }
+    private void showModeDialog() {
+        if (isRecording) {
+            Toast.makeText(requireContext(),
+                    "Mettez l'enregistrement en pause pour changer le mode",
+                    Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        String[] modes = {"À pied", "À vélo"};
+
+        int checkedItem = selectedRecordMode.equals("bicycling") ? 1 : 0;
+
+        new AlertDialog.Builder(requireContext())
+                .setTitle("Choisir le mode")
+                .setSingleChoiceItems(modes, checkedItem, (dialog, which) -> {
+                    if (which == 0) {
+                        selectedRecordMode = "walking";
+                    } else {
+                        selectedRecordMode = "bicycling";
+                    }
+
+                    updateRecordModeText();
+                    dialog.dismiss();
+                })
+                .show();
     }
     private void showPublishDialog() {
-        if (recordedPoints.size() < 2) {
+        if (!isRouteLongEnoughToPublish()) {
             Toast.makeText(requireContext(),
-                    "Itinéraire trop court pour être publié",
+                    "Itinéraire trop court : marchez au moins 10 mètres",
                     Toast.LENGTH_SHORT).show();
             return;
         }
@@ -274,6 +323,7 @@ public class ItinerairesUtilisateursFragment extends Fragment implements OnMapRe
                                 "Position indisponible pour le moment",
                                 Toast.LENGTH_SHORT).show();
                     }
+                    updateGpsStatus(location);
                 });
     }
 
@@ -295,6 +345,8 @@ public class ItinerairesUtilisateursFragment extends Fragment implements OnMapRe
         recordedPoints.clear();
         elapsedBeforePause = 0;
         startTimeMillis = System.currentTimeMillis();
+        lastAcceptedLocation = null;
+        lastAcceptedTimeMillis = 0;
 
         btnPauseRecord.setImageResource(R.drawable.ic_pause_black);
         btnSendRoute.setAlpha(1f);
@@ -310,16 +362,9 @@ public class ItinerairesUtilisateursFragment extends Fragment implements OnMapRe
         // Ajoute rapidement la dernière position connue comme premier point.
         fusedLocationClient.getLastLocation()
                 .addOnSuccessListener(location -> {
-                    if (location != null) {
-                        LatLng firstPoint = new LatLng(location.getLatitude(), location.getLongitude());
-                        recordedPoints.add(firstPoint);
-
-                        mMap.addMarker(new MarkerOptions()
-                                .position(firstPoint)
-                                .title("Départ"));
-
-                        mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(firstPoint, 17f));
-                        updateStats();
+                    updateGpsStatus(location);
+                    if (location != null && isLocationAccurateEnough(location)) {
+                        acceptNewLocation(location, true);
                     }
                 });
 
@@ -346,12 +391,10 @@ public class ItinerairesUtilisateursFragment extends Fragment implements OnMapRe
                 if (!isRecording) return;
 
                 for (Location location : locationResult.getLocations()) {
-                    LatLng newPoint = new LatLng(location.getLatitude(), location.getLongitude());
+                    updateGpsStatus(location);
 
-                    if (shouldAddPoint(newPoint)) {
-                        recordedPoints.add(newPoint);
-                        drawRecordedRoute();
-                        updateStats();
+                    if (shouldAcceptLocation(location)) {
+                        acceptNewLocation(location, false);
                     }
                 }
             }
@@ -364,14 +407,89 @@ public class ItinerairesUtilisateursFragment extends Fragment implements OnMapRe
         );
     }
 
-    private boolean shouldAddPoint(LatLng newPoint) {
-        if (recordedPoints.isEmpty()) {
+    private boolean isLocationAccurateEnough(Location location) {
+        return location.hasAccuracy()
+                && location.getAccuracy() <= MAX_ACCEPTED_ACCURACY_METERS;
+    }
+
+    private boolean shouldAcceptLocation(Location location) {
+        if (location == null) {
+            return false;
+        }
+
+        // 1. Bỏ điểm GPS quá kém chính xác
+        if (!isLocationAccurateEnough(location)) {
+            return false;
+        }
+
+        // 2. Điểm đầu tiên thì nhận
+        if (lastAcceptedLocation == null) {
             return true;
         }
 
-        LatLng lastPoint = recordedPoints.get(recordedPoints.size() - 1);
+        float distance = lastAcceptedLocation.distanceTo(location);
 
-        return distanceBetween(lastPoint, newPoint) >= 5;
+        // 3. Nếu GPS chỉ dao động nhẹ khi đứng yên thì bỏ
+        if (distance < MIN_DISTANCE_METERS) {
+            return false;
+        }
+
+        long now = System.currentTimeMillis();
+        long elapsedMillis = now - lastAcceptedTimeMillis;
+
+        if (elapsedMillis <= 0) {
+            return false;
+        }
+
+        float elapsedSeconds = elapsedMillis / 1000f;
+        float speed = distance / elapsedSeconds;
+
+        // 4. Nếu tốc độ quá cao so với đi bộ thì coi là GPS jump
+        if (speed > MAX_WALKING_SPEED_MPS) {
+            return false;
+        }
+
+        return true;
+    }
+    private void updateGpsStatus(Location location) {
+        if (location == null || !location.hasAccuracy()) {
+            tvGpsStatus.setText("En attente du signal GPS...");
+            tvGpsStatus.setTextColor(Color.parseColor("#9CA3AF"));
+            return;
+        }
+
+        float accuracy = location.getAccuracy();
+
+        if (accuracy <= 15) {
+            tvGpsStatus.setText("GPS précis");
+            tvGpsStatus.setTextColor(Color.parseColor("#22C55E"));
+        } else if (accuracy <= 25) {
+            tvGpsStatus.setText("GPS correct");
+            tvGpsStatus.setTextColor(Color.parseColor("#84CC16"));
+        } else {
+            tvGpsStatus.setText("Signal GPS faible");
+            tvGpsStatus.setTextColor(Color.parseColor("#F97316"));
+        }
+    }
+
+    private void acceptNewLocation(Location location, boolean isFirstPoint) {
+        LatLng point = new LatLng(location.getLatitude(), location.getLongitude());
+
+        recordedPoints.add(point);
+        lastAcceptedLocation = location;
+        lastAcceptedTimeMillis = System.currentTimeMillis();
+
+        if (isFirstPoint) {
+            mMap.addMarker(new MarkerOptions()
+                    .position(point)
+                    .title("Départ"));
+
+            mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(point, 17f));
+        } else {
+            drawRecordedRoute();
+        }
+
+        updateStats();
     }
 
     private void pauseRecordingRoute() {
@@ -461,16 +579,16 @@ public class ItinerairesUtilisateursFragment extends Fragment implements OnMapRe
         tvRecordTimer.setText("00:00");
         tvDistanceMeters.setText("0");
         tvGpsPoints.setText("0");
-        tvEcoPoints.setText("0");
+        tvCo2Saved.setText("0 g");
         btnSendRoute.setAlpha(0.6f);
 
         Toast.makeText(requireContext(), "Enregistrement annulé", Toast.LENGTH_SHORT).show();
     }
 
     private void publishRecordedRoute(String title, String depart, String destination, String description) {
-        if (recordedPoints.size() < 2) {
+        if (!isRouteLongEnoughToPublish()) {
             Toast.makeText(requireContext(),
-                    "Itinéraire trop court pour être publié",
+                    "Itinéraire trop court : marchez au moins 10 mètres",
                     Toast.LENGTH_SHORT).show();
             return;
         }
@@ -496,7 +614,7 @@ public class ItinerairesUtilisateursFragment extends Fragment implements OnMapRe
 
         String distanceText = calculateRecordedDistanceText();
         String durationText = tvRecordTimer.getText().toString();
-        int ecoPoints = calculateEcoPoints();
+        double co2SavedKg = calculateCo2SavedKg();
         LatLng startPoint = recordedPoints.get(0);
         LatLng endPoint = recordedPoints.get(recordedPoints.size() - 1);
 
@@ -506,7 +624,7 @@ public class ItinerairesUtilisateursFragment extends Fragment implements OnMapRe
         itineraire.put("destination", destination);
         itineraire.put("departLower", depart.toLowerCase(Locale.ROOT));
         itineraire.put("destinationLower", destination.toLowerCase(Locale.ROOT));
-        itineraire.put("mode", "walking");
+        itineraire.put("mode", selectedRecordMode);
         itineraire.put("description", description);
         itineraire.put("distance", distanceText);
         itineraire.put("duration", durationText);
@@ -518,7 +636,7 @@ public class ItinerairesUtilisateursFragment extends Fragment implements OnMapRe
         itineraire.put("likes", 0);
         itineraire.put("usageCount", 0);
         itineraire.put("status", "active");
-        itineraire.put("ecoPoints", ecoPoints);
+        itineraire.put("co2SavedKg", co2SavedKg);
         itineraire.put("createdBy", userId);
         itineraire.put("createdAt", FieldValue.serverTimestamp());
 
@@ -535,6 +653,9 @@ public class ItinerairesUtilisateursFragment extends Fragment implements OnMapRe
                 );
     }
 
+    private boolean isRouteLongEnoughToPublish() {
+        return recordedPoints.size() >= 3 && calculateRecordedDistanceMeters() >= 10;
+    }
     private void fitCameraToRecordedRoute() {
         if (mMap == null || recordedPoints.size() < 2) return;
 
@@ -551,11 +672,28 @@ public class ItinerairesUtilisateursFragment extends Fragment implements OnMapRe
         float totalDistance = calculateRecordedDistanceMeters();
         int roundedDistance = Math.round(totalDistance);
         int pointsCount = recordedPoints.size();
-        int ecoPoints = calculateEcoPoints();
 
         tvDistanceMeters.setText(String.valueOf(roundedDistance));
         tvGpsPoints.setText(String.valueOf(pointsCount));
-        tvEcoPoints.setText(String.valueOf(ecoPoints));
+        tvCo2Saved.setText(calculateCo2SavedText());
+    }
+    private double calculateCo2SavedKg() {
+        float distanceMeters = calculateRecordedDistanceMeters();
+
+        // Hypothèse simple : une voiture moyenne émet environ 120 g CO₂ / km.
+        // Donc 1 km à pied ≈ 0.12 kg CO₂ évité.
+        return (distanceMeters / 1000.0) * 0.12;
+    }
+
+    private String calculateCo2SavedText() {
+        double co2Kg = calculateCo2SavedKg();
+
+        if (co2Kg < 1) {
+            int grams = (int) Math.round(co2Kg * 1000);
+            return grams + " g";
+        }
+
+        return String.format(Locale.FRANCE, "%.2f kg", co2Kg);
     }
 
     private int calculateEcoPoints() {
@@ -666,6 +804,8 @@ public class ItinerairesUtilisateursFragment extends Fragment implements OnMapRe
         startTimeMillis = 0;
 
         recordedPoints.clear();
+        lastAcceptedLocation = null;
+        lastAcceptedTimeMillis = 0;
 
         if (recordedPolyline != null) {
             recordedPolyline.remove();
@@ -681,7 +821,7 @@ public class ItinerairesUtilisateursFragment extends Fragment implements OnMapRe
         tvRecordTimer.setText("00:00");
         tvDistanceMeters.setText("0");
         tvGpsPoints.setText("0");
-        tvEcoPoints.setText("0");
+        tvCo2Saved.setText("0 g");
         btnSendRoute.setAlpha(0.6f);
     }
 }

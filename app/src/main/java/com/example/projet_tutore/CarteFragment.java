@@ -26,8 +26,9 @@ import com.google.android.material.bottomsheet.BottomSheetBehavior;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
-import com.google.firebase.firestore.FirebaseFirestore; //test
-
+import com.google.firebase.firestore.DocumentSnapshot;
+import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.FieldValue;
 import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.URL;
@@ -37,9 +38,10 @@ public class CarteFragment extends Fragment implements OnMapReadyCallback {
 
     private GoogleMap mMap;
     private static final String TAG = "CARTE_DEBUG";
-    private FirebaseFirestore db; //test
     private FusedLocationProviderClient fusedLocationClient;
     private BottomSheetBehavior<View> behavior;
+    private FirebaseFirestore db;
+    private boolean userRoutesLoaded = false;
 
     private Button btnCalculer;
     private EditText etDepart, etArrivee;
@@ -265,6 +267,7 @@ public class CarteFragment extends Fragment implements OnMapReadyCallback {
         }
 
         completedRequests = 0;
+        userRoutesLoaded = false;
         allRoutes.clear();
 
         String[] modes = {"transit", "driving", "walking", "bicycling"};
@@ -275,6 +278,13 @@ public class CarteFragment extends Fragment implements OnMapReadyCallback {
             Log.d(TAG, "Arrivée: " + arrivee);
             Log.d(TAG, "Origin: " + originLatLng);
             Log.d(TAG, "Destination: " + destLatLng);
+        }
+        loadUserSuggestedRoutes();
+    }
+    private void tryFinishLoadingRoutes() {
+        if (completedRequests == 4 && userRoutesLoaded) {
+            Log.d(TAG, "TOTAL ROUTES RECUPEREES: " + allRoutes.size());
+            filtrerRoutes();
         }
     }
 
@@ -360,11 +370,7 @@ public class CarteFragment extends Fragment implements OnMapReadyCallback {
                 requireActivity().runOnUiThread(() -> {
                     completedRequests++;
                     Log.d(TAG, "REQUÊTES FINIES: " + completedRequests + "/4");
-
-                    if (completedRequests == 4) {
-                        Log.d(TAG, "TOTAL ROUTES RECUPEREES: " + allRoutes.size());
-                        filtrerRoutes();
-                    }
+                    tryFinishLoadingRoutes();
                 });
             }
         }).start();
@@ -456,6 +462,16 @@ public class CarteFragment extends Fragment implements OnMapReadyCallback {
         for (RouteOption r : allRoutes) {
             if (r.getMode().equals(travelMode)) {
                 filtered.add(r);
+            } else if (r.getMode().equals("user")) {
+                String communityMode = r.getCommunityMode();
+
+                if (communityMode == null || communityMode.trim().isEmpty()) {
+                    communityMode = "walking";
+                }
+
+                if (communityMode.equals(travelMode)) {
+                    filtered.add(r);
+                }
             }
         }
 
@@ -464,9 +480,17 @@ public class CarteFragment extends Fragment implements OnMapReadyCallback {
             return;
         }
 
-        Collections.sort(filtered, (r1, r2) ->
-                parseDuration(r1.getDuration()) - parseDuration(r2.getDuration())
-        );
+        Collections.sort(filtered, (r1, r2) -> {
+            if (r1.getMode().equals("user") && !r2.getMode().equals("user")) {
+                return -1;
+            }
+
+            if (!r1.getMode().equals("user") && r2.getMode().equals("user")) {
+                return 1;
+            }
+
+            return parseDuration(r1.getDuration()) - parseDuration(r2.getDuration());
+        });
 
         if (filtered.size() > 5) {
             filtered = filtered.subList(0, 5);
@@ -482,6 +506,9 @@ public class CarteFragment extends Fragment implements OnMapReadyCallback {
     private void afficherRoute(RouteOption route) {
 
         mMap.clear();
+        if (route.getMode().equals("user")) {
+            incrementUserRouteUsage(route);
+        }
 
         int color;
 
@@ -498,17 +525,34 @@ public class CarteFragment extends Fragment implements OnMapReadyCallback {
             case "driving":
                 color = Color.parseColor("#F44336");
                 break;
+            case "user":
+                color = Color.parseColor("#3FA34D");
+                break;
             default:
                 color = Color.BLUE;
         }
 
-        currentPolyline = mMap.addPolyline(new PolylineOptions()
+        PolylineOptions polylineOptions = new PolylineOptions()
                 .addAll(route.getPolylinePoints())
                 .width(12)
-                .color(color));
+                .color(color);
 
-        mMap.addMarker(new MarkerOptions().position(originLatLng).title("Départ"));
-        mMap.addMarker(new MarkerOptions().position(destLatLng).title("Arrivée"));
+        if (route.getMode().equals("user")) {
+            polylineOptions.pattern(Arrays.asList(new Dash(25), new Gap(16)));
+        }
+
+        currentPolyline = mMap.addPolyline(polylineOptions);
+
+        LatLng markerStart = route.getMode().equals("user")
+                ? route.getPolylinePoints().get(0)
+                : originLatLng;
+
+        LatLng markerEnd = route.getMode().equals("user")
+                ? route.getPolylinePoints().get(route.getPolylinePoints().size() - 1)
+                : destLatLng;
+
+        mMap.addMarker(new MarkerOptions().position(markerStart).title("Départ"));
+        mMap.addMarker(new MarkerOptions().position(markerEnd).title("Arrivée"));
 
         LatLngBounds.Builder builder = new LatLngBounds.Builder();
 
@@ -569,6 +613,165 @@ public class CarteFragment extends Fragment implements OnMapReadyCallback {
         }
 
         return poly;
+    }
+    @SuppressWarnings("unchecked")
+    private void loadUserSuggestedRoutes() {
+        if (originLatLng == null || destLatLng == null) {
+            userRoutesLoaded = true;
+            tryFinishLoadingRoutes();
+            return;
+        }
+
+        db.collection("itineraires_utilisateurs")
+                .whereEqualTo("status", "active")
+                .get()
+                .addOnSuccessListener(queryDocumentSnapshots -> {
+
+                    for (DocumentSnapshot document : queryDocumentSnapshots) {
+
+                        Double startLat = document.getDouble("startLat");
+                        Double startLng = document.getDouble("startLng");
+                        Double endLat = document.getDouble("endLat");
+                        Double endLng = document.getDouble("endLng");
+
+                        if (startLat == null || startLng == null || endLat == null || endLng == null) {
+                            continue;
+                        }
+
+                        LatLng routeStart = new LatLng(startLat, startLng);
+                        LatLng routeEnd = new LatLng(endLat, endLng);
+
+                        float distanceStart = distanceBetween(originLatLng, routeStart);
+                        float distanceEnd = distanceBetween(destLatLng, routeEnd);
+
+                        // MVP: route communauté nếu điểm đầu/cuối gần điểm user tìm
+                        boolean isNearSearch =
+                                distanceStart <= 700 &&
+                                        distanceEnd <= 700;
+
+                        if (!isNearSearch) {
+                            continue;
+                        }
+
+                        List<Map<String, Object>> pointsFirebase =
+                                (List<Map<String, Object>>) document.get("points");
+
+                        if (pointsFirebase == null || pointsFirebase.size() < 2) {
+                            continue;
+                        }
+
+                        List<LatLng> points = new ArrayList<>();
+
+                        for (Map<String, Object> pointMap : pointsFirebase) {
+                            Object latObj = pointMap.get("lat");
+                            Object lngObj = pointMap.get("lng");
+
+                            if (latObj instanceof Number && lngObj instanceof Number) {
+                                double lat = ((Number) latObj).doubleValue();
+                                double lng = ((Number) lngObj).doubleValue();
+
+                                points.add(new LatLng(lat, lng));
+                            }
+                        }
+
+                        if (points.size() < 2) {
+                            continue;
+                        }
+
+                        String title = document.getString("title");
+                        String duration = document.getString("duration");
+                        String distance = document.getString("distance");
+
+                        if (title == null || title.trim().isEmpty()) {
+                            title = "Proposition utilisateur";
+                        }
+
+                        if (duration == null || duration.trim().isEmpty()) {
+                            duration = "Durée inconnue";
+                        }
+
+                        if (distance == null || distance.trim().isEmpty()) {
+                            distance = calculateDistanceText(points);
+                        }
+
+                        String communityMode = document.getString("mode");
+
+                        if (communityMode == null || communityMode.trim().isEmpty()) {
+                            communityMode = "walking";
+                        }
+
+                        RouteOption userRoute = new RouteOption(
+                                "user",
+                                duration,
+                                distance,
+                                title,
+                                points
+                        );
+
+                        userRoute.setDocumentId(document.getId());
+                        userRoute.setCommunityMode(communityMode);
+
+                        synchronized (allRoutes) {
+                            allRoutes.add(userRoute);
+                        }
+
+                        Log.d(TAG, "Route communauté ajoutée : " + title);
+                    }
+
+                    userRoutesLoaded = true;
+                    tryFinishLoadingRoutes();
+                })
+                .addOnFailureListener(e -> {
+                    Log.e(TAG, "Erreur chargement itinéraires utilisateurs", e);
+
+                    userRoutesLoaded = true;
+                    tryFinishLoadingRoutes();
+                });
+    }
+    private float distanceBetween(LatLng p1, LatLng p2) {
+        float[] results = new float[1];
+
+        android.location.Location.distanceBetween(
+                p1.latitude,
+                p1.longitude,
+                p2.latitude,
+                p2.longitude,
+                results
+        );
+
+        return results[0];
+    }
+    private String calculateDistanceText(List<LatLng> points) {
+        if (points == null || points.size() < 2) {
+            return "0 m";
+        }
+
+        float total = 0;
+
+        for (int i = 1; i < points.size(); i++) {
+            total += distanceBetween(points.get(i - 1), points.get(i));
+        }
+
+        if (total < 1000) {
+            return Math.round(total) + " m";
+        }
+
+        return String.format(Locale.FRANCE, "%.1f km", total / 1000);
+    }
+    private void incrementUserRouteUsage(RouteOption route) {
+        if (route.getDocumentId() == null || route.getDocumentId().trim().isEmpty()) {
+            return;
+        }
+
+        db.collection("itineraires_utilisateurs")
+                .document(route.getDocumentId())
+                .update("usageCount", FieldValue.increment(1))
+                .addOnSuccessListener(unused ->
+                        Log.d(TAG, "usageCount augmenté pour route communauté")
+                )
+                .addOnFailureListener(e ->
+                        Log.e(TAG, "Erreur update usageCount", e)
+                );
     }
 }
 // Classe utilitaire pour éviter de réécrire les méthodes inutiles

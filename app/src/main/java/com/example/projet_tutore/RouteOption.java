@@ -15,6 +15,8 @@ public class RouteOption {
     private String price;
     private String arrivalTime;
     private List<RouteStep> steps;
+    private String documentId;
+    private String communityMode;
 
     public RouteOption(String mode, String duration, String distance, String summary,
                        List<LatLng> polylinePoints) {
@@ -86,6 +88,7 @@ public class RouteOption {
             case "walking": return "🚶";
             case "bicycling": return "🚴";
             case "driving": return "🚗";
+            case "user": return "🌱";
             default: return "📍";
         }
     }
@@ -96,6 +99,7 @@ public class RouteOption {
             case "walking": return "À pied";
             case "bicycling": return "À vélo";
             case "driving": return "En voiture";
+            case "user": return "Proposition utilisateur";
             default: return "Autre";
         }
     }
@@ -107,7 +111,24 @@ public class RouteOption {
             return "Marche directe";
         } else if (mode.equalsIgnoreCase("bicycling")) {
             return "Vélo direct";
+        } else if (mode.equalsIgnoreCase("user")) {
+            return "Partagée par la communauté";
         }
         return "";
+    }
+    public String getDocumentId() {
+        return documentId;
+    }
+
+    public void setDocumentId(String documentId) {
+        this.documentId = documentId;
+    }
+
+    public String getCommunityMode() {
+        return communityMode;
+    }
+
+    public void setCommunityMode(String communityMode) {
+        this.communityMode = communityMode;
     }
 }

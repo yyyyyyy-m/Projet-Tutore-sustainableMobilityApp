@@ -41,7 +41,14 @@ public class RouteOptionsAdapter extends RecyclerView.Adapter<RouteOptionsAdapte
         // En-tête
         holder.tvModeIcon.setText(route.getModeIcon());
         holder.tvDurationMain.setText(route.getDuration());
-        holder.tvModeName.setText(route.getModeName());
+        //en tete pour les trajets partagés
+        if (route.getMode().equalsIgnoreCase("user")
+                && route.getSummary() != null
+                && !route.getSummary().trim().isEmpty()) {
+            holder.tvModeName.setText(route.getSummary());
+        } else {
+            holder.tvModeName.setText(route.getModeName());
+        }
         holder.tvArrivalTime.setText("Arrivée: " + route.getArrivalTime());
         holder.tvDistance.setText(route.getDistance());
 

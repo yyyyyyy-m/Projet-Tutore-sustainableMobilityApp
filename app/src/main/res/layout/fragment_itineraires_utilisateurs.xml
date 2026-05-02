@@ -123,6 +123,15 @@
             android:textColor="#56C568"
             android:textSize="13sp"
             android:textStyle="bold" />
+        <TextView
+            android:id="@+id/tvGpsStatus"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:text="En attente du signal GPS..."
+            android:textColor="#9CA3AF"
+            android:textSize="10sp"
+            android:textStyle="italic" />
 
         <!-- STATS -->
         <LinearLayout
@@ -202,16 +211,16 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Éco-points"
+                    android:text="CO₂ évité"
                     android:textColor="#B0B0B0"
                     android:textSize="12sp"
                     android:textStyle="bold" />
 
                 <TextView
-                    android:id="@+id/tvEcoPoints"
+                    android:id="@+id/tvCo2Saved"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="0"
+                    android:text="0 g"
                     android:textColor="#111111"
                     android:textSize="22sp"
                     android:textStyle="bold" />
