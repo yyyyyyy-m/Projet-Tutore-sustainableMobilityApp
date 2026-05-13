@@ -58,6 +58,7 @@ public class CarteFragment extends Fragment implements OnMapReadyCallback {
     private Polyline currentPolyline;
 
     private int completedRequests = 0;
+    private LatLng selectedFirebaseDestinationLatLng = null;
 
     private final String API_KEY = BuildConfig.MAPS_API_KEY;
 
@@ -118,7 +119,9 @@ public class CarteFragment extends Fragment implements OnMapReadyCallback {
                 new ArrayAdapter<>(requireContext(), android.R.layout.simple_dropdown_item_1line);
 
         ((AutoCompleteTextView) etDepart).setAdapter(adapterDepart);
+        ((AutoCompleteTextView) etDepart).setThreshold(1);
         ((AutoCompleteTextView) etArrivee).setAdapter(adapterArrivee);
+        ((AutoCompleteTextView) etArrivee).setThreshold(1);
         etDepart.addTextChangedListener(new SimpleTextWatcher() {
             @Override
             public void onTextChanged(CharSequence s, int start, int before, int count) {
@@ -131,8 +134,9 @@ public class CarteFragment extends Fragment implements OnMapReadyCallback {
         etArrivee.addTextChangedListener(new SimpleTextWatcher() {
             @Override
             public void onTextChanged(CharSequence s, int start, int before, int count) {
-                if (s.length() > 3) {
-                    fetchAddressSuggestionsOSM(s.toString(), adapterArrivee);
+                if (s.length() > 2) {
+                    fetchDestinationSuggestions(s.toString(), adapterArrivee,
+                            (AutoCompleteTextView) etArrivee);
                 }
             }
         });
@@ -153,55 +157,118 @@ public class CarteFragment extends Fragment implements OnMapReadyCallback {
         selected.setBackgroundColor(Color.parseColor("#B8E6C1"));
     }
     private void fetchAddressSuggestionsOSM(String query, ArrayAdapter<String> adapter) {
+        try {
+            String encodedQuery = java.net.URLEncoder.encode(query, "UTF-8");
 
-        String url = "https://nominatim.openstreetmap.org/search?q="
-                + query.replace(" ", "%20")
-                + "&format=json&addressdetails=1&limit=10";
+            String url = "https://nominatim.openstreetmap.org/search?q="
+                    + encodedQuery
+                    + "&format=jsonv2"
+                    + "&addressdetails=1"
+                    + "&limit=10"
+                    + "&countrycodes=fr"
+                    + "&accept-language=fr";
 
-        new Thread(() -> {
-            try {
-                HttpURLConnection conn = (HttpURLConnection) new URL(url).openConnection();
+            new Thread(() -> {
+                try {
+                    HttpURLConnection conn = (HttpURLConnection) new URL(url).openConnection();
 
-                // 🔥 OBLIGATOIRE avec OSM (sinon blocage)
-                conn.setRequestProperty("User-Agent", "Android-App");
+                    conn.setRequestProperty("User-Agent", "GreenGo-Android-App/1.0");
+                    conn.connect();
 
-                conn.connect();
+                    BufferedReader reader = new BufferedReader(
+                            new InputStreamReader(conn.getInputStream())
+                    );
 
-                BufferedReader reader = new BufferedReader(
-                        new InputStreamReader(conn.getInputStream())
-                );
+                    StringBuilder json = new StringBuilder();
+                    String line;
 
-                StringBuilder json = new StringBuilder();
-                String line;
+                    while ((line = reader.readLine()) != null) {
+                        json.append(line);
+                    }
 
-                while ((line = reader.readLine()) != null) {
-                    json.append(line);
+                    JSONArray results = new JSONArray(json.toString());
+                    List<String> suggestions = new ArrayList<>();
+
+                    for (int i = 0; i < results.length(); i++) {
+                        JSONObject obj = results.getJSONObject(i);
+                        String displayName = obj.getString("display_name");
+                        suggestions.add(displayName);
+                    }
+
+                    requireActivity().runOnUiThread(() -> {
+                        adapter.clear();
+                        adapter.addAll(suggestions);
+                        adapter.notifyDataSetChanged();
+                    });
+
+                } catch (Exception e) {
+                    Log.e(TAG, "Erreur OSM autocomplete", e);
                 }
+            }).start();
 
-                JSONArray results = new JSONArray(json.toString());
-
-                List<String> suggestions = new ArrayList<>();
-
-                for (int i = 0; i < results.length(); i++) {
-                    JSONObject obj = results.getJSONObject(i);
-
-                    String displayName = obj.getString("display_name");
-
-                    suggestions.add(displayName);
-                }
-
-                requireActivity().runOnUiThread(() -> {
-                    adapter.clear();
-                    adapter.addAll(suggestions);
-                    adapter.notifyDataSetChanged();
-                });
-
-            } catch (Exception e) {
-                Log.e(TAG, "Erreur OSM autocomplete", e);
-            }
-        }).start();
+        } catch (Exception e) {
+            Log.e(TAG, "Erreur encodage URL OSM", e);
+        }
     }
 
+    private void fetchDestinationSuggestions(String query,
+                                             ArrayAdapter<String> adapter,
+                                             AutoCompleteTextView autoCompleteTextView) {
+
+        String queryLower = query.toLowerCase(Locale.ROOT).trim();
+
+        db.collection("itineraires_utilisateurs")
+                .whereEqualTo("status", "active")
+                .get()
+                .addOnSuccessListener(queryDocumentSnapshots -> {
+
+                    List<String> suggestions = new ArrayList<>();
+                    Map<String, LatLng> destinationCoords = new HashMap<>();
+
+                    for (DocumentSnapshot document : queryDocumentSnapshots) {
+                        String destination = document.getString("destination");
+                        Double endLat = document.getDouble("endLat");
+                        Double endLng = document.getDouble("endLng");
+
+                        if (destination == null || destination.trim().isEmpty()
+                                || endLat == null || endLng == null) {
+                            continue;
+                        }
+
+                        String destinationLower = destination.toLowerCase(Locale.ROOT);
+
+                        if (destinationLower.contains(queryLower)) {
+                            if (!suggestions.contains(destination)) {
+                                suggestions.add(destination);
+                                destinationCoords.put(destination, new LatLng(endLat, endLng));
+                            }
+                        }
+                    }
+
+                    requireActivity().runOnUiThread(() -> {
+                        adapter.clear();
+                        adapter.addAll(suggestions);
+                        adapter.notifyDataSetChanged();
+
+                        autoCompleteTextView.setOnItemClickListener((parent, view, position, id) -> {
+                            String selectedDestination = parent.getItemAtPosition(position).toString();
+                            selectedFirebaseDestinationLatLng = destinationCoords.get(selectedDestination);
+
+                            Log.d(TAG, "Destination Firebase sélectionnée: "
+                                    + selectedDestination + " -> " + selectedFirebaseDestinationLatLng);
+                        });
+
+                        if (!suggestions.isEmpty() && autoCompleteTextView.hasFocus()) {
+                            autoCompleteTextView.showDropDown();
+                        }
+
+                        Log.d(TAG, "Suggestions Firebase destination: " + suggestions.size());
+                    });
+                })
+                .addOnFailureListener(e ->
+                        Log.e(TAG, "Erreur suggestions Firebase destination", e)
+                );
+    }
     @Override
     public void onMapReady(@NonNull GoogleMap googleMap) {
         mMap = googleMap;
@@ -259,7 +326,12 @@ public class CarteFragment extends Fragment implements OnMapReadyCallback {
         } else {
             originLatLng = getLocationFromAddress(depart);
         }
-        destLatLng = getLocationFromAddress(arrivee);
+        if (selectedFirebaseDestinationLatLng != null) {
+            destLatLng = selectedFirebaseDestinationLatLng;
+            Log.d(TAG, "Destination utilisée depuis Firebase: " + destLatLng);
+        } else {
+            destLatLng = getLocationFromAddress(arrivee);
+        }
 
         if (originLatLng == null || destLatLng == null) {
             Toast.makeText(getContext(), "Adresse invalide", Toast.LENGTH_SHORT).show();
@@ -459,6 +531,17 @@ public class CarteFragment extends Fragment implements OnMapReadyCallback {
 
         List<RouteOption> filtered = new ArrayList<>();
 
+        Log.d(TAG, "===== FILTRAGE ROUTES =====");
+        Log.d(TAG, "Mode sélectionné: " + travelMode);
+        Log.d(TAG, "Nombre total allRoutes: " + allRoutes.size());
+
+        for (RouteOption r : allRoutes) {
+            Log.d(TAG, "Route disponible: " + r.getMode()
+                    + " | " + r.getDuration()
+                    + " | " + r.getDistance()
+                    + " | " + r.getSummary());
+        }
+
         for (RouteOption r : allRoutes) {
             if (r.getMode().equals(travelMode)) {
                 filtered.add(r);
@@ -473,6 +556,18 @@ public class CarteFragment extends Fragment implements OnMapReadyCallback {
                     filtered.add(r);
                 }
             }
+        }
+
+        // Sécurité: nếu mode đang chọn không có route,
+        // nhưng Google có route mode khác thì vẫn hiển thị thay vì báo rỗng.
+        if (filtered.isEmpty() && !allRoutes.isEmpty()) {
+            Log.d(TAG, "Aucune route pour le mode sélectionné, fallback vers toutes les routes disponibles.");
+
+            Toast.makeText(getContext(),
+                    "Aucun trajet pour ce mode, affichage des autres options",
+                    Toast.LENGTH_SHORT).show();
+
+            filtered.addAll(allRoutes);
         }
 
         if (filtered.isEmpty()) {
@@ -496,9 +591,15 @@ public class CarteFragment extends Fragment implements OnMapReadyCallback {
             filtered = filtered.subList(0, 5);
         }
 
-        adapter = new RouteOptionsAdapter(filtered, this::afficherRoute);
-        rvTousItineraires.setAdapter(adapter);
+        adapter = new RouteOptionsAdapter(filtered, route -> {
+            afficherRoute(route);
 
+            if (route.getMode().equals("user")) {
+                incrementUserRouteUsage(route);
+            }
+        });
+
+        rvTousItineraires.setAdapter(adapter);
 
         afficherRoute(filtered.get(0));
     }
