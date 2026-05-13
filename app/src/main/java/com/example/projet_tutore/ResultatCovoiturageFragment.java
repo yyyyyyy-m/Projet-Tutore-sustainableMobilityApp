@@ -13,14 +13,17 @@ import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.navigation.Navigation;
 
+import com.google.android.gms.maps.model.LatLng;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 
-import java.util.Locale;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.List;
+import java.util.Locale;
 
 public class ResultatCovoiturageFragment extends Fragment {
 
@@ -31,6 +34,13 @@ public class ResultatCovoiturageFragment extends Fragment {
     private String date;
     private String time;
     private String passengers;
+
+    private double passengerDepartLat = Double.NaN;
+    private double passengerDepartLng = Double.NaN;
+    private double passengerDestinationLat = Double.NaN;
+    private double passengerDestinationLng = Double.NaN;
+
+    private static final double ROUTE_MATCH_THRESHOLD_KM = 5.0;
 
     private int passengersCount = 1;
 
@@ -89,6 +99,11 @@ public class ResultatCovoiturageFragment extends Fragment {
             date = args.getString("date", "");
             time = args.getString("time", "");
             passengers = args.getString("passengers", "1");
+
+            passengerDepartLat = args.getDouble("departLat", Double.NaN);
+            passengerDepartLng = args.getDouble("departLng", Double.NaN);
+            passengerDestinationLat = args.getDouble("destinationLat", Double.NaN);
+            passengerDestinationLng = args.getDouble("destinationLng", Double.NaN);
         } else {
             depart = "";
             destination = "";
@@ -116,6 +131,12 @@ public class ResultatCovoiturageFragment extends Fragment {
         tvResultCount.setText("Recherche en cours...");
         tvSectionToday.setVisibility(View.GONE);
 
+        if (!hasValidCoordinates(passengerDepartLat, passengerDepartLng)
+                || !hasValidCoordinates(passengerDestinationLat, passengerDestinationLng)) {
+            tvResultCount.setText("Veuillez choisir le départ et la destination sur la carte.");
+            return;
+        }
+
         db.collection("trajets")
                 .get()
                 .addOnSuccessListener(queryDocumentSnapshots -> {
@@ -131,10 +152,10 @@ public class ResultatCovoiturageFragment extends Fragment {
                     }
 
                     if (count == 0) {
-                        tvResultCount.setText("Aucun conducteur trouvé pour cet itinéraire.");
+                        tvResultCount.setText("Aucun conducteur trouvé à proximité de cet itinéraire.");
                         tvSectionToday.setVisibility(View.GONE);
                     } else {
-                        tvResultCount.setText(count + " conducteur(s) avec correspondance d’itinéraire !");
+                        tvResultCount.setText(count + " conducteur(s) trouvé(s) sur un itinéraire compatible !");
                         tvSectionToday.setText(formatDateLabel(date));
                         tvSectionToday.setVisibility(View.VISIBLE);
                     }
@@ -174,6 +195,16 @@ public class ResultatCovoiturageFragment extends Fragment {
 
         trajet.status = getStringValue(document, "status", "available");
 
+        trajet.departLat = getDoubleValue(document, "departLat", Double.NaN);
+        trajet.departLng = getDoubleValue(document, "departLng", Double.NaN);
+        trajet.destinationLat = getDoubleValue(document, "destinationLat", Double.NaN);
+        trajet.destinationLng = getDoubleValue(document, "destinationLng", Double.NaN);
+
+        trajet.routePolyline = getStringValue(document, "routePolyline", "");
+        trajet.routeDistance = getStringValue(document, "routeDistance", "");
+        trajet.routeDuration = getStringValue(document, "routeDuration", "");
+        trajet.travelMode = getStringValue(document, "travelMode", "driving");
+
         return trajet;
     }
 
@@ -182,14 +213,173 @@ public class ResultatCovoiturageFragment extends Fragment {
         return value == null ? defaultValue : value;
     }
 
+    private double getDoubleValue(DocumentSnapshot document, String key, double defaultValue) {
+        Double value = document.getDouble(key);
+        return value == null ? defaultValue : value;
+    }
+
     private boolean matchesSearch(Trajet trajet) {
-        boolean sameDepart = trajet.departLower.equals(depart.toLowerCase(Locale.ROOT));
-        boolean sameDestination = trajet.destinationLower.equals(destination.toLowerCase(Locale.ROOT));
         boolean sameDate = trajet.date.equals(date);
         boolean enoughPlaces = trajet.places >= passengersCount;
         boolean available = !"completed".equals(trajet.status);
 
-        return sameDepart && sameDestination && sameDate && enoughPlaces && available;
+        if (!sameDate || !enoughPlaces || !available) {
+            return false;
+        }
+
+        if (trajet.routePolyline == null || trajet.routePolyline.trim().isEmpty()) {
+            return fallbackTextAndPointMatch(trajet);
+        }
+
+        List<LatLng> routePoints = decodePolyline(trajet.routePolyline);
+
+        if (routePoints.isEmpty()) {
+            return fallbackTextAndPointMatch(trajet);
+        }
+
+        PointMatch departMatch = findNearestRoutePoint(
+                new LatLng(passengerDepartLat, passengerDepartLng),
+                routePoints
+        );
+
+        PointMatch destinationMatch = findNearestRoutePoint(
+                new LatLng(passengerDestinationLat, passengerDestinationLng),
+                routePoints
+        );
+
+        boolean departCloseToRoute = departMatch.distanceKm <= ROUTE_MATCH_THRESHOLD_KM;
+        boolean destinationCloseToRoute = destinationMatch.distanceKm <= ROUTE_MATCH_THRESHOLD_KM;
+        boolean correctOrder = departMatch.index < destinationMatch.index;
+
+        return departCloseToRoute && destinationCloseToRoute && correctOrder;
+    }
+
+    private boolean fallbackTextAndPointMatch(Trajet trajet) {
+        boolean sameDepartText = normalizeText(trajet.departLower).contains(normalizeText(depart))
+                || normalizeText(depart).contains(normalizeText(trajet.departLower));
+
+        boolean sameDestinationText = normalizeText(trajet.destinationLower).contains(normalizeText(destination))
+                || normalizeText(destination).contains(normalizeText(trajet.destinationLower));
+
+        boolean departClose = true;
+        boolean destinationClose = true;
+
+        if (hasValidCoordinates(trajet.departLat, trajet.departLng)) {
+            double distance = distanceKm(
+                    passengerDepartLat,
+                    passengerDepartLng,
+                    trajet.departLat,
+                    trajet.departLng
+            );
+            departClose = distance <= ROUTE_MATCH_THRESHOLD_KM;
+        }
+
+        if (hasValidCoordinates(trajet.destinationLat, trajet.destinationLng)) {
+            double distance = distanceKm(
+                    passengerDestinationLat,
+                    passengerDestinationLng,
+                    trajet.destinationLat,
+                    trajet.destinationLng
+            );
+            destinationClose = distance <= ROUTE_MATCH_THRESHOLD_KM;
+        }
+
+        return sameDepartText && sameDestinationText && departClose && destinationClose;
+    }
+
+    private String normalizeText(String value) {
+        if (value == null) return "";
+        return value.trim().toLowerCase(Locale.ROOT).replaceAll("\\s+", " ");
+    }
+
+    private PointMatch findNearestRoutePoint(LatLng target, List<LatLng> routePoints) {
+        double bestDistance = Double.MAX_VALUE;
+        int bestIndex = -1;
+
+        for (int i = 0; i < routePoints.size(); i++) {
+            LatLng point = routePoints.get(i);
+
+            double distance = distanceKm(
+                    target.latitude,
+                    target.longitude,
+                    point.latitude,
+                    point.longitude
+            );
+
+            if (distance < bestDistance) {
+                bestDistance = distance;
+                bestIndex = i;
+            }
+        }
+
+        return new PointMatch(bestIndex, bestDistance);
+    }
+
+    private double distanceKm(double lat1, double lng1, double lat2, double lng2) {
+        final double earthRadiusKm = 6371.0;
+
+        double dLat = Math.toRadians(lat2 - lat1);
+        double dLng = Math.toRadians(lng2 - lng1);
+
+        double a = Math.sin(dLat / 2) * Math.sin(dLat / 2)
+                + Math.cos(Math.toRadians(lat1))
+                * Math.cos(Math.toRadians(lat2))
+                * Math.sin(dLng / 2) * Math.sin(dLng / 2);
+
+        double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+        return earthRadiusKm * c;
+    }
+
+    private List<LatLng> decodePolyline(String encoded) {
+        List<LatLng> poly = new ArrayList<>();
+
+        if (encoded == null || encoded.isEmpty()) {
+            return poly;
+        }
+
+        int index = 0;
+        int len = encoded.length();
+        int lat = 0;
+        int lng = 0;
+
+        while (index < len) {
+            int b;
+            int shift = 0;
+            int result = 0;
+
+            do {
+                if (index >= len) return poly;
+                b = encoded.charAt(index++) - 63;
+                result |= (b & 0x1f) << shift;
+                shift += 5;
+            } while (b >= 0x20);
+
+            int dlat = ((result & 1) != 0) ? ~(result >> 1) : (result >> 1);
+            lat += dlat;
+
+            shift = 0;
+            result = 0;
+
+            do {
+                if (index >= len) return poly;
+                b = encoded.charAt(index++) - 63;
+                result |= (b & 0x1f) << shift;
+                shift += 5;
+            } while (b >= 0x20);
+
+            int dlng = ((result & 1) != 0) ? ~(result >> 1) : (result >> 1);
+            lng += dlng;
+
+            LatLng point = new LatLng(lat / 1E5, lng / 1E5);
+            poly.add(point);
+        }
+
+        return poly;
+    }
+
+    private boolean hasValidCoordinates(double lat, double lng) {
+        return !Double.isNaN(lat) && !Double.isNaN(lng);
     }
 
     private void addTrajetCard(Trajet trajet) {
@@ -294,8 +484,7 @@ public class ResultatCovoiturageFragment extends Fragment {
                 SimpleDateFormat sdf = new SimpleDateFormat(format, Locale.FRANCE);
                 sdf.setLenient(false);
                 return sdf.parse(rawDate);
-            } catch (ParseException ignored) {
-            }
+            } catch (ParseException ignored) {}
         }
 
         return null;
@@ -313,4 +502,13 @@ public class ResultatCovoiturageFragment extends Fragment {
                 && a.get(Calendar.DAY_OF_YEAR) == b.get(Calendar.DAY_OF_YEAR);
     }
 
+    private static class PointMatch {
+        int index;
+        double distanceKm;
+
+        PointMatch(int index, double distanceKm) {
+            this.index = index;
+            this.distanceKm = distanceKm;
+        }
+    }
 }

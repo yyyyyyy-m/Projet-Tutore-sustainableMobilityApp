@@ -19,6 +19,8 @@ import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.navigation.Navigation;
 
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
 
@@ -43,8 +45,28 @@ public class PartageFragment extends Fragment {
 
     private FirebaseFirestore db;
 
-    public PartageFragment() {
-    }
+    private String currentMode = "search";
+
+    private double departSearchLat = Double.NaN;
+    private double departSearchLng = Double.NaN;
+    private double destinationSearchLat = Double.NaN;
+    private double destinationSearchLng = Double.NaN;
+
+    private double departPublishLat = Double.NaN;
+    private double departPublishLng = Double.NaN;
+    private double destinationPublishLat = Double.NaN;
+    private double destinationPublishLng = Double.NaN;
+
+    private String routePolyline = "";
+    private String routeDistance = "";
+    private String routeDuration = "";
+
+    private double routeOriginLat = Double.NaN;
+    private double routeOriginLng = Double.NaN;
+    private double routeDestinationLat = Double.NaN;
+    private double routeDestinationLng = Double.NaN;
+
+    public PartageFragment() {}
 
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container,
@@ -61,9 +83,14 @@ public class PartageFragment extends Fragment {
         initViews(view);
         setupInputFormats();
         setupActions();
+        setupMapPickerResultListener();
+        setupAddressPickers();
+        setupDrivingRouteResultListener();
 
         Bundle args = getArguments();
         if (args != null && "publish".equals(args.getString("mode"))) {
+            showPublishMode();
+        } else if ("publish".equals(currentMode)) {
             showPublishMode();
         } else {
             showSearchMode();
@@ -98,13 +125,11 @@ public class PartageFragment extends Fragment {
         btnSearchMode.setOnClickListener(v -> showSearchMode());
         btnPublishMode.setOnClickListener(v -> showPublishMode());
 
-        btnHistory.setOnClickListener(v -> {
-            Navigation.findNavController(v)
-                    .navigate(R.id.activitesCovoiturageFragment);
-        });
+        btnHistory.setOnClickListener(v ->
+                Navigation.findNavController(v).navigate(R.id.activitesCovoiturageFragment)
+        );
 
         btnSearchTrip.setOnClickListener(v -> searchTrip(v));
-
         btnPublishTrip.setOnClickListener(v -> publishTrip());
     }
 
@@ -131,14 +156,10 @@ public class PartageFragment extends Fragment {
         editText.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_CAP_WORDS);
 
         editText.setFilters(new InputFilter[]{
-                new InputFilter.LengthFilter(40),
+                new InputFilter.LengthFilter(80),
                 (source, start, end, dest, dstart, dend) -> {
                     String input = source.subSequence(start, end).toString();
-
-                    if (input.matches("[\\p{L}\\p{M}0-9 .'’\\-,]*")) {
-                        return null;
-                    }
-
+                    if (input.matches("[\\p{L}\\p{M}0-9 .'’\\-,]*")) return null;
                     return "";
                 }
         });
@@ -152,32 +173,20 @@ public class PartageFragment extends Fragment {
         editText.addTextChangedListener(new TextWatcher() {
             private boolean editing = false;
 
-            @Override
-            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
-            }
-
-            @Override
-            public void onTextChanged(CharSequence s, int start, int before, int count) {
-            }
+            @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+            @Override public void onTextChanged(CharSequence s, int start, int before, int count) {}
 
             @Override
             public void afterTextChanged(Editable s) {
                 if (editing) return;
-
                 editing = true;
 
                 String digits = s.toString().replaceAll("\\D", "");
-
-                if (digits.length() > 8) {
-                    digits = digits.substring(0, 8);
-                }
+                if (digits.length() > 8) digits = digits.substring(0, 8);
 
                 StringBuilder formatted = new StringBuilder();
-
                 for (int i = 0; i < digits.length(); i++) {
-                    if (i == 2 || i == 4) {
-                        formatted.append("/");
-                    }
+                    if (i == 2 || i == 4) formatted.append("/");
                     formatted.append(digits.charAt(i));
                 }
 
@@ -197,32 +206,20 @@ public class PartageFragment extends Fragment {
         editText.addTextChangedListener(new TextWatcher() {
             private boolean editing = false;
 
-            @Override
-            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
-            }
-
-            @Override
-            public void onTextChanged(CharSequence s, int start, int before, int count) {
-            }
+            @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+            @Override public void onTextChanged(CharSequence s, int start, int before, int count) {}
 
             @Override
             public void afterTextChanged(Editable s) {
                 if (editing) return;
-
                 editing = true;
 
                 String digits = s.toString().replaceAll("\\D", "");
-
-                if (digits.length() > 4) {
-                    digits = digits.substring(0, 4);
-                }
+                if (digits.length() > 4) digits = digits.substring(0, 4);
 
                 StringBuilder formatted = new StringBuilder();
-
                 for (int i = 0; i < digits.length(); i++) {
-                    if (i == 2) {
-                        formatted.append(":");
-                    }
+                    if (i == 2) formatted.append(":");
                     formatted.append(digits.charAt(i));
                 }
 
@@ -245,13 +242,8 @@ public class PartageFragment extends Fragment {
                             + source.subSequence(start, end)
                             + dest.toString().substring(dend);
 
-                    if (newValue.isEmpty()) {
-                        return null;
-                    }
-
-                    if (newValue.matches("[1-8]")) {
-                        return null;
-                    }
+                    if (newValue.isEmpty()) return null;
+                    if (newValue.matches("[1-8]")) return null;
 
                     return "";
                 }
@@ -269,13 +261,8 @@ public class PartageFragment extends Fragment {
                             + source.subSequence(start, end)
                             + dest.toString().substring(dend);
 
-                    if (newValue.isEmpty()) {
-                        return null;
-                    }
-
-                    if (newValue.matches("\\d{0,2}([,.]\\d{0,2})?")) {
-                        return null;
-                    }
+                    if (newValue.isEmpty()) return null;
+                    if (newValue.matches("\\d{0,2}([,.]\\d{0,2})?")) return null;
 
                     return "";
                 }
@@ -285,6 +272,14 @@ public class PartageFragment extends Fragment {
     private void searchTrip(View v) {
         if (!validateSearchInputs()) {
             Toast.makeText(requireContext(), "Veuillez corriger les champs invalides", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        if (!hasValidCoordinates(departSearchLat, departSearchLng)
+                || !hasValidCoordinates(destinationSearchLat, destinationSearchLng)) {
+            Toast.makeText(requireContext(),
+                    "Veuillez choisir le départ et la destination sur la carte",
+                    Toast.LENGTH_LONG).show();
             return;
         }
 
@@ -300,14 +295,40 @@ public class PartageFragment extends Fragment {
         bundle.putString("date", date);
         bundle.putString("time", time);
         bundle.putString("passengers", passengers);
+        bundle.putDouble("departLat", departSearchLat);
+        bundle.putDouble("departLng", departSearchLng);
+        bundle.putDouble("destinationLat", destinationSearchLat);
+        bundle.putDouble("destinationLng", destinationSearchLng);
 
         Navigation.findNavController(v)
                 .navigate(R.id.resultatCovoiturageFragment, bundle);
     }
 
     private void publishTrip() {
+        FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+
+        if (user == null) {
+            Toast.makeText(requireContext(),
+                    "Veuillez vous connecter pour proposer un trajet",
+                    Toast.LENGTH_LONG).show();
+            return;
+        }
+
         if (!validatePublishInputs()) {
             Toast.makeText(requireContext(), "Veuillez corriger les champs invalides", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        if (!hasValidCoordinates(departPublishLat, departPublishLng)
+                || !hasValidCoordinates(destinationPublishLat, destinationPublishLng)) {
+            Toast.makeText(requireContext(),
+                    "Veuillez choisir le départ et la destination sur la carte",
+                    Toast.LENGTH_LONG).show();
+            return;
+        }
+
+        if (routePolyline == null || routePolyline.isEmpty()) {
+            openDrivingRouteForPublish();
             return;
         }
 
@@ -322,8 +343,9 @@ public class PartageFragment extends Fragment {
         double priceDouble = Double.parseDouble(price.replace(",", "."));
 
         Map<String, Object> trajet = new HashMap<>();
-        trajet.put("driverName", "Conducteur");
-        trajet.put("initials", "CD");
+        trajet.put("driverId", user.getUid());
+        trajet.put("driverName", user.getEmail() != null ? user.getEmail() : "Conducteur");
+        trajet.put("initials", getInitialsFromUser(user));
 
         trajet.put("depart", depart);
         trajet.put("destination", destination);
@@ -337,6 +359,20 @@ public class PartageFragment extends Fragment {
         trajet.put("status", "available");
         trajet.put("createdAt", FieldValue.serverTimestamp());
 
+        trajet.put("departLat", departPublishLat);
+        trajet.put("departLng", departPublishLng);
+        trajet.put("destinationLat", destinationPublishLat);
+        trajet.put("destinationLng", destinationPublishLng);
+
+        trajet.put("routePolyline", routePolyline);
+        trajet.put("routeDistance", routeDistance);
+        trajet.put("routeDuration", routeDuration);
+        trajet.put("routeOriginLat", routeOriginLat);
+        trajet.put("routeOriginLng", routeOriginLng);
+        trajet.put("routeDestinationLat", routeDestinationLat);
+        trajet.put("routeDestinationLng", routeDestinationLng);
+        trajet.put("travelMode", "driving");
+
         db.collection("trajets")
                 .add(trajet)
                 .addOnSuccessListener(documentReference -> {
@@ -349,11 +385,82 @@ public class PartageFragment extends Fragment {
                     etPlacesPublish.setText("");
                     etPricePublish.setText("");
 
+                    departPublishLat = Double.NaN;
+                    departPublishLng = Double.NaN;
+                    destinationPublishLat = Double.NaN;
+                    destinationPublishLng = Double.NaN;
+                    resetConfirmedRoute();
+
                     showSearchMode();
                 })
                 .addOnFailureListener(e ->
                         Toast.makeText(requireContext(), "Erreur Firebase : " + e.getMessage(), Toast.LENGTH_LONG).show()
                 );
+    }
+
+    private void openDrivingRouteForPublish() {
+        currentMode = "publish";
+
+        Bundle bundle = new Bundle();
+
+        bundle.putString("origin", etDepartPublish.getText().toString().trim());
+        bundle.putString("destination", etDestinationPublish.getText().toString().trim());
+
+        bundle.putDouble("originLat", departPublishLat);
+        bundle.putDouble("originLng", departPublishLng);
+        bundle.putDouble("destinationLat", destinationPublishLat);
+        bundle.putDouble("destinationLng", destinationPublishLng);
+
+        Navigation.findNavController(requireView())
+                .navigate(R.id.drivingRouteFragment, bundle);
+    }
+
+    private void setupDrivingRouteResultListener() {
+        getParentFragmentManager().setFragmentResultListener(
+                "driving_route_result",
+                getViewLifecycleOwner(),
+                (requestKey, result) -> {
+                    routePolyline = result.getString("routePolyline", "");
+                    routeDistance = result.getString("routeDistance", "");
+                    routeDuration = result.getString("routeDuration", "");
+
+                    routeOriginLat = result.getDouble("routeOriginLat");
+                    routeOriginLng = result.getDouble("routeOriginLng");
+                    routeDestinationLat = result.getDouble("routeDestinationLat");
+                    routeDestinationLng = result.getDouble("routeDestinationLng");
+
+                    Toast.makeText(requireContext(),
+                            "Itinéraire confirmé, publication du trajet...",
+                            Toast.LENGTH_SHORT).show();
+
+                    showPublishMode();
+                    publishTrip();
+                }
+        );
+    }
+
+    private void resetConfirmedRoute() {
+        routePolyline = "";
+        routeDistance = "";
+        routeDuration = "";
+
+        routeOriginLat = Double.NaN;
+        routeOriginLng = Double.NaN;
+        routeDestinationLat = Double.NaN;
+        routeDestinationLng = Double.NaN;
+    }
+
+    private String getInitialsFromUser(FirebaseUser user) {
+        String email = user.getEmail();
+
+        if (email == null || email.trim().isEmpty()) return "CD";
+
+        String namePart = email.split("@")[0].trim();
+
+        if (namePart.length() >= 2) return namePart.substring(0, 2).toUpperCase(Locale.ROOT);
+        if (namePart.length() == 1) return namePart.toUpperCase(Locale.ROOT);
+
+        return "CD";
     }
 
     private boolean validateSearchInputs() {
@@ -537,7 +644,94 @@ public class PartageFragment extends Fragment {
         calendar.set(Calendar.MILLISECOND, 0);
     }
 
+    private void setupAddressPickers() {
+        etDepartSearch.setFocusable(false);
+        etDestinationSearch.setFocusable(false);
+        etDepartPublish.setFocusable(false);
+        etDestinationPublish.setFocusable(false);
+
+        etDepartSearch.setOnClickListener(v -> {
+            currentMode = "search";
+            openMapPicker("departSearch", etDepartSearch.getText().toString().trim());
+        });
+
+        etDestinationSearch.setOnClickListener(v -> {
+            currentMode = "search";
+            openMapPicker("destinationSearch", etDestinationSearch.getText().toString().trim());
+        });
+
+        etDepartPublish.setOnClickListener(v -> {
+            currentMode = "publish";
+            openMapPicker("departPublish", etDepartPublish.getText().toString().trim());
+        });
+
+        etDestinationPublish.setOnClickListener(v -> {
+            currentMode = "publish";
+            openMapPicker("destinationPublish", etDestinationPublish.getText().toString().trim());
+        });
+    }
+
+    private void openMapPicker(String target, String initialAddress) {
+        Bundle bundle = new Bundle();
+        bundle.putString("target", target);
+        bundle.putString("initialAddress", initialAddress);
+
+        Navigation.findNavController(requireView())
+                .navigate(R.id.mapPickerFragment, bundle);
+    }
+
+    private void setupMapPickerResultListener() {
+        getParentFragmentManager().setFragmentResultListener(
+                "map_picker_result",
+                getViewLifecycleOwner(),
+                (requestKey, result) -> {
+                    String target = result.getString("target", "");
+                    String address = result.getString("address", "");
+                    double lat = result.getDouble("lat");
+                    double lng = result.getDouble("lng");
+
+                    switch (target) {
+                        case "departSearch":
+                            etDepartSearch.setText(address);
+                            departSearchLat = lat;
+                            departSearchLng = lng;
+                            showSearchMode();
+                            break;
+
+                        case "destinationSearch":
+                            etDestinationSearch.setText(address);
+                            destinationSearchLat = lat;
+                            destinationSearchLng = lng;
+                            showSearchMode();
+                            break;
+
+                        case "departPublish":
+                            etDepartPublish.setText(address);
+                            departPublishLat = lat;
+                            departPublishLng = lng;
+                            resetConfirmedRoute();
+                            showPublishMode();
+                            break;
+
+                        case "destinationPublish":
+                            etDestinationPublish.setText(address);
+                            destinationPublishLat = lat;
+                            destinationPublishLng = lng;
+                            resetConfirmedRoute();
+                            showPublishMode();
+                            break;
+                    }
+                }
+        );
+    }
+
+    private boolean hasValidCoordinates(double lat, double lng) {
+        return !Double.isNaN(lat) && !Double.isNaN(lng);
+    }
+
     private void showSearchMode() {
+        currentMode = "search";
+
         layoutSearch.setVisibility(View.VISIBLE);
         layoutPublish.setVisibility(View.GONE);
 
@@ -549,6 +743,8 @@ public class PartageFragment extends Fragment {
     }
 
     private void showPublishMode() {
+        currentMode = "publish";
+
         layoutSearch.setVisibility(View.GONE);
         layoutPublish.setVisibility(View.VISIBLE);
 

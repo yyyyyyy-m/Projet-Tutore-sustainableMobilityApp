@@ -12,12 +12,16 @@ import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.navigation.Navigation;
 
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.Locale;
 
 public class PaiementCovoiturageFragment extends Fragment {
@@ -26,6 +30,12 @@ public class PaiementCovoiturageFragment extends Fragment {
 
     private String documentId = "";
     private int passengersCount = 1;
+
+    private String departure = "";
+    private String arrival = "";
+    private String date = "";
+    private String time = "";
+    private String price = "";
 
     public PaiementCovoiturageFragment() {}
 
@@ -58,12 +68,12 @@ public class PaiementCovoiturageFragment extends Fragment {
 
             String initials = args.getString("initials", "CD");
             String driverName = args.getString("driverName", "Conducteur");
-            String departure = args.getString("departure", "");
-            String arrival = args.getString("arrival", "");
-            String date = args.getString("date", "");
-            String time = args.getString("time", "");
+            departure = args.getString("departure", "");
+            arrival = args.getString("arrival", "");
+            date = args.getString("date", "");
+            time = args.getString("time", "");
             String places = args.getString("places", "1");
-            String price = args.getString("price", "0");
+            price = args.getString("price", "0");
             String passengers = args.getString("passengers", "1");
 
             try {
@@ -93,6 +103,15 @@ public class PaiementCovoiturageFragment extends Fragment {
     }
 
     private void confirmReservation(View v) {
+        FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+
+        if (user == null) {
+            Toast.makeText(requireContext(),
+                    "Veuillez vous connecter pour réserver",
+                    Toast.LENGTH_LONG).show();
+            return;
+        }
+
         if (documentId == null || documentId.isEmpty()) {
             Toast.makeText(requireContext(), "Erreur : trajet introuvable", Toast.LENGTH_SHORT).show();
             return;
@@ -125,16 +144,48 @@ public class PaiementCovoiturageFragment extends Fragment {
                                     "status", newPlaces == 0 ? "completed" : "available"
                             )
                             .addOnSuccessListener(unused -> {
-                                Toast.makeText(requireContext(), "Réservation confirmée", Toast.LENGTH_SHORT).show();
-                                Navigation.findNavController(v).popBackStack(R.id.partageFragment, false);
+                                saveReservation(user);
+
+                                Toast.makeText(requireContext(),
+                                        "Réservation confirmée",
+                                        Toast.LENGTH_SHORT).show();
+
+                                Navigation.findNavController(v)
+                                        .popBackStack(R.id.partageFragment, false);
                             })
                             .addOnFailureListener(e ->
-                                    Toast.makeText(requireContext(), "Erreur réservation : " + e.getMessage(), Toast.LENGTH_LONG).show()
+                                    Toast.makeText(requireContext(),
+                                            "Erreur réservation : " + e.getMessage(),
+                                            Toast.LENGTH_LONG).show()
                             );
                 })
                 .addOnFailureListener(e ->
-                        Toast.makeText(requireContext(), "Erreur Firebase : " + e.getMessage(), Toast.LENGTH_LONG).show()
+                        Toast.makeText(requireContext(),
+                                "Erreur Firebase : " + e.getMessage(),
+                                Toast.LENGTH_LONG).show()
                 );
+    }
+
+    private void saveReservation(FirebaseUser user) {
+        double parsedPrice = 0.0;
+
+        try {
+            parsedPrice = Double.parseDouble(price);
+        } catch (Exception ignored) {}
+
+        HashMap<String, Object> reservation = new HashMap<>();
+        reservation.put("userId", user.getUid());
+        reservation.put("trajetId", documentId);
+        reservation.put("depart", departure);
+        reservation.put("arrivee", arrival);
+        reservation.put("date", date);
+        reservation.put("heure", time);
+        reservation.put("prix", parsedPrice);
+        reservation.put("placesReservees", passengersCount);
+        reservation.put("status", "confirmed");
+        reservation.put("createdAt", FieldValue.serverTimestamp());
+
+        db.collection("reservations").add(reservation);
     }
 
     private String formatDateLabel(String rawDate) {
@@ -188,8 +239,7 @@ public class PaiementCovoiturageFragment extends Fragment {
                 SimpleDateFormat sdf = new SimpleDateFormat(format, Locale.FRANCE);
                 sdf.setLenient(false);
                 return sdf.parse(rawDate);
-            } catch (ParseException ignored) {
-            }
+            } catch (ParseException ignored) {}
         }
 
         return null;

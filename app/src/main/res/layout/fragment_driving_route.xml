@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="#FFFFFF">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="58dp"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingStart="16dp"
+        android:paddingEnd="16dp">
+
+        <TextView
+            android:id="@+id/btnBack"
+            android:layout_width="42dp"
+            android:layout_height="42dp"
+            android:gravity="center"
+            android:text="‹"
+            android:textSize="34sp"
+            android:textColor="#111827" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Confirmer l’itinéraire"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            android:textColor="#111827" />
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/tvRouteTitle"
+        android:layout_width="match_parent"
+        android:layout_height="58dp"
+        android:paddingStart="18dp"
+        android:paddingEnd="18dp"
+        android:gravity="center_vertical"
+        android:text="Départ → Destination"
+        android:textSize="15sp"
+        android:textColor="#111827"
+        android:background="#F3F4F6" />
+
+    <TextView
+        android:id="@+id/btnSearchRoute"
+        android:layout_width="match_parent"
+        android:layout_height="46dp"
+        android:layout_marginStart="18dp"
+        android:layout_marginEnd="18dp"
+        android:layout_marginTop="10dp"
+        android:layout_marginBottom="10dp"
+        android:gravity="center"
+        android:text="Recalculer l’itinéraire voiture"
+        android:textColor="#FFFFFF"
+        android:textStyle="bold"
+        android:background="#00C853" />
+
+    <fragment
+        android:id="@+id/drivingRouteMap"
+        android:name="com.google.android.gms.maps.SupportMapFragment"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1" />
+
+    <TextView
+        android:id="@+id/tvRouteInfo"
+        android:layout_width="match_parent"
+        android:layout_height="70dp"
+        android:padding="16dp"
+        android:text="Calcul de l’itinéraire en cours..."
+        android:textSize="15sp"
+        android:textColor="#111827"
+        android:background="#F3F4F6" />
+
+    <TextView
+        android:id="@+id/btnConfirmRoute"
+        android:layout_width="match_parent"
+        android:layout_height="52dp"
+        android:gravity="center"
+        android:background="#00C853"
+        android:text="Confirmer cet itinéraire"
+        android:textColor="#FFFFFF"
+        android:textStyle="bold"
+        android:textSize="15sp" />
+
+</LinearLayout>
