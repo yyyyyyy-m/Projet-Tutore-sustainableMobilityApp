@@ -6,9 +6,17 @@ import android.graphics.Color;
 import android.location.Address;
 import android.location.Geocoder;
 import android.os.Bundle;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.util.Log;
-import android.view.*;
-import android.widget.*;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.ArrayAdapter;
+import android.widget.AutoCompleteTextView;
+import android.widget.Button;
+import android.widget.ImageButton;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -18,61 +26,101 @@ import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.google.android.gms.location.*;
-import com.google.android.gms.maps.*;
-import com.google.android.gms.maps.model.*;
+import com.google.android.gms.location.FusedLocationProviderClient;
+import com.google.android.gms.location.LocationServices;
+import com.google.android.gms.maps.CameraUpdateFactory;
+import com.google.android.gms.maps.GoogleMap;
+import com.google.android.gms.maps.OnMapReadyCallback;
+import com.google.android.gms.maps.SupportMapFragment;
+import com.google.android.gms.maps.model.Dash;
+import com.google.android.gms.maps.model.Gap;
+import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.LatLngBounds;
+import com.google.android.gms.maps.model.MarkerOptions;
+import com.google.android.gms.maps.model.PatternItem;
+import com.google.android.gms.maps.model.Polyline;
+import com.google.android.gms.maps.model.PolylineOptions;
 import com.google.android.material.bottomsheet.BottomSheetBehavior;
+import com.google.firebase.firestore.DocumentSnapshot;
+import com.google.firebase.firestore.FieldValue;
+import com.google.firebase.firestore.FirebaseFirestore;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
 
-import com.google.firebase.firestore.DocumentSnapshot;
-import com.google.firebase.firestore.FirebaseFirestore;
-import com.google.firebase.firestore.FieldValue;
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 
 public class CarteFragment extends Fragment implements OnMapReadyCallback {
 
-    private GoogleMap mMap;
     private static final String TAG = "CARTE_DEBUG";
+
+    private GoogleMap mMap;
+
     private FusedLocationProviderClient fusedLocationClient;
-    private BottomSheetBehavior<View> behavior;
     private FirebaseFirestore db;
-    private boolean userRoutesLoaded = false;
+
+    private BottomSheetBehavior<View> behavior;
 
     private Button btnCalculer;
-    private EditText etDepart, etArrivee;
-    private ImageButton btnModeBus, btnModeMarche, btnModeVelo;
+
+    private AutoCompleteTextView etDepart;
+    private AutoCompleteTextView etArrivee;
+
+    private ImageButton btnModeBus;
+    private ImageButton btnModeMarche;
+    private ImageButton btnModeVelo;
 
     private RecyclerView rvTousItineraires;
+
     private RouteOptionsAdapter adapter;
 
-    private List<RouteOption> allRoutes = new ArrayList<>();
+    private final List<RouteOption> allRoutes = new ArrayList<>();
 
     private String travelMode = "transit";
 
-    private LatLng originLatLng, destLatLng;
+    private LatLng originLatLng;
+    private LatLng destLatLng;
+
     private Polyline currentPolyline;
 
     private int completedRequests = 0;
+
+    private boolean userRoutesLoaded = false;
 
     private final String API_KEY = BuildConfig.MAPS_API_KEY;
 
     @Nullable
     @Override
-    public View onCreateView(@NonNull LayoutInflater inflater,
-                             @Nullable ViewGroup container,
-                             @Nullable Bundle savedInstanceState) {
+    public View onCreateView(
+            @NonNull LayoutInflater inflater,
+            @Nullable ViewGroup container,
+            @Nullable Bundle savedInstanceState
+    ) {
+
         return inflater.inflate(R.layout.fragment_carte, container, false);
     }
 
     @Override
-    public void onViewCreated(@NonNull View v, @Nullable Bundle savedInstanceState) {
+    public void onViewCreated(
+            @NonNull View v,
+            @Nullable Bundle savedInstanceState
+    ) {
+
+        db = FirebaseFirestore.getInstance();
+
+        fusedLocationClient =
+                LocationServices.getFusedLocationProviderClient(requireActivity());
 
         btnCalculer = v.findViewById(R.id.btnCalculerTrajet);
+
         etDepart = v.findViewById(R.id.etDepart);
         etArrivee = v.findViewById(R.id.etArrivee);
 
@@ -81,424 +129,501 @@ public class CarteFragment extends Fragment implements OnMapReadyCallback {
         btnModeVelo = v.findViewById(R.id.btnModeVelo);
 
         rvTousItineraires = v.findViewById(R.id.rvTousItineraires);
-        rvTousItineraires.setLayoutManager(new LinearLayoutManager(requireContext()));
 
-        fusedLocationClient = LocationServices.getFusedLocationProviderClient(requireActivity());
-        db = FirebaseFirestore.getInstance();
+        rvTousItineraires.setLayoutManager(
+                new LinearLayoutManager(requireContext())
+        );
 
         View bottomSheet = v.findViewById(R.id.bottomSheet);
+
         behavior = BottomSheetBehavior.from(bottomSheet);
 
-        btnCalculer.setOnClickListener(view -> {
-            Log.d(TAG, "Bouton calcul cliqué");
-            calculerTousLesItineraires();
-        });
+        setupAutocomplete();
 
-        btnModeBus.setOnClickListener(v1 -> {
+        setupButtons();
+
+        SupportMapFragment mapFragment =
+                (SupportMapFragment)
+                        getChildFragmentManager().findFragmentById(R.id.map);
+
+        if (mapFragment != null) {
+            mapFragment.getMapAsync(this);
+        }
+    }
+
+    private void setupButtons() {
+
+        btnCalculer.setOnClickListener(v -> calculerTousLesItineraires());
+
+        btnModeBus.setOnClickListener(v -> {
+
             travelMode = "transit";
+
             updateButtons(btnModeBus);
+
             filtrerRoutes();
         });
 
-        btnModeMarche.setOnClickListener(v12 -> {
+        btnModeMarche.setOnClickListener(v -> {
+
             travelMode = "walking";
+
             updateButtons(btnModeMarche);
+
             filtrerRoutes();
         });
 
-        btnModeVelo.setOnClickListener(v13 -> {
+        btnModeVelo.setOnClickListener(v -> {
+
             travelMode = "bicycling";
+
             updateButtons(btnModeVelo);
+
             filtrerRoutes();
         });
+    }
+
+    private void setupAutocomplete() {
+
         ArrayAdapter<String> adapterDepart =
-                new ArrayAdapter<>(requireContext(), android.R.layout.simple_dropdown_item_1line);
+                new ArrayAdapter<>(
+                        requireContext(),
+                        android.R.layout.simple_dropdown_item_1line
+                );
 
         ArrayAdapter<String> adapterArrivee =
-                new ArrayAdapter<>(requireContext(), android.R.layout.simple_dropdown_item_1line);
+                new ArrayAdapter<>(
+                        requireContext(),
+                        android.R.layout.simple_dropdown_item_1line
+                );
 
-        ((AutoCompleteTextView) etDepart).setAdapter(adapterDepart);
-        ((AutoCompleteTextView) etArrivee).setAdapter(adapterArrivee);
+        etDepart.setAdapter(adapterDepart);
+        etArrivee.setAdapter(adapterArrivee);
+
         etDepart.addTextChangedListener(new SimpleTextWatcher() {
+
             @Override
-            public void onTextChanged(CharSequence s, int start, int before, int count) {
-                if (s.length() > 3) {
-                    fetchAddressSuggestionsOSM(s.toString(), adapterDepart);
+            public void onTextChanged(
+                    CharSequence s,
+                    int start,
+                    int before,
+                    int count
+            ) {
+
+                if (s.length() >= 3) {
+
+                    fetchAddressSuggestionsOSM(
+                            s.toString(),
+                            adapterDepart
+                    );
                 }
             }
         });
 
         etArrivee.addTextChangedListener(new SimpleTextWatcher() {
+
             @Override
-            public void onTextChanged(CharSequence s, int start, int before, int count) {
-                if (s.length() > 3) {
-                    fetchAddressSuggestionsOSM(s.toString(), adapterArrivee);
+            public void onTextChanged(
+                    CharSequence s,
+                    int start,
+                    int before,
+                    int count
+            ) {
+
+                if (s.length() >= 3) {
+
+                    fetchAddressSuggestionsOSM(
+                            s.toString(),
+                            adapterArrivee
+                    );
                 }
             }
         });
-
-        SupportMapFragment mapFragment =
-                (SupportMapFragment) getChildFragmentManager().findFragmentById(R.id.map);
-
-        if (mapFragment != null) {
-            mapFragment.getMapAsync(this);
-        }
-
     }
 
     private void updateButtons(ImageButton selected) {
+
         btnModeBus.setBackgroundColor(Color.WHITE);
         btnModeMarche.setBackgroundColor(Color.WHITE);
         btnModeVelo.setBackgroundColor(Color.WHITE);
-        selected.setBackgroundColor(Color.parseColor("#B8E6C1"));
-    }
-    private void fetchAddressSuggestionsOSM(String query, ArrayAdapter<String> adapter) {
 
-        String url = "https://nominatim.openstreetmap.org/search?q="
-                + query.replace(" ", "%20")
-                + "&format=json&addressdetails=1&limit=10";
-
-        new Thread(() -> {
-            try {
-                HttpURLConnection conn = (HttpURLConnection) new URL(url).openConnection();
-
-                // 🔥 OBLIGATOIRE avec OSM (sinon blocage)
-                conn.setRequestProperty("User-Agent", "Android-App");
-
-                conn.connect();
-
-                BufferedReader reader = new BufferedReader(
-                        new InputStreamReader(conn.getInputStream())
-                );
-
-                StringBuilder json = new StringBuilder();
-                String line;
-
-                while ((line = reader.readLine()) != null) {
-                    json.append(line);
-                }
-
-                JSONArray results = new JSONArray(json.toString());
-
-                List<String> suggestions = new ArrayList<>();
-
-                for (int i = 0; i < results.length(); i++) {
-                    JSONObject obj = results.getJSONObject(i);
-
-                    String displayName = obj.getString("display_name");
-
-                    suggestions.add(displayName);
-                }
-
-                requireActivity().runOnUiThread(() -> {
-                    adapter.clear();
-                    adapter.addAll(suggestions);
-                    adapter.notifyDataSetChanged();
-                });
-
-            } catch (Exception e) {
-                Log.e(TAG, "Erreur OSM autocomplete", e);
-            }
-        }).start();
+        selected.setBackgroundColor(
+                Color.parseColor("#B8E6C1")
+        );
     }
 
     @Override
     public void onMapReady(@NonNull GoogleMap googleMap) {
+
         mMap = googleMap;
+
         checkLocationPermission();
-        getCurrentLocation(); // Chargement carte = Géolocalise
     }
+
+    private void checkLocationPermission() {
+
+        if (
+                ContextCompat.checkSelfPermission(
+                        requireContext(),
+                        Manifest.permission.ACCESS_FINE_LOCATION
+                ) == PackageManager.PERMISSION_GRANTED
+        ) {
+
+            mMap.setMyLocationEnabled(true);
+
+            getCurrentLocation();
+
+        } else {
+
+            requestPermissions(
+                    new String[]{
+                            Manifest.permission.ACCESS_FINE_LOCATION
+                    },
+                    1
+            );
+        }
+    }
+
     private void getCurrentLocation() {
 
-        if (ActivityCompat.checkSelfPermission(requireContext(),
-                Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+        if (
+                ActivityCompat.checkSelfPermission(
+                        requireContext(),
+                        Manifest.permission.ACCESS_FINE_LOCATION
+                ) != PackageManager.PERMISSION_GRANTED
+        ) {
             return;
         }
 
-        fusedLocationClient.getLastLocation()
+        fusedLocationClient
+                .getLastLocation()
                 .addOnSuccessListener(location -> {
 
                     if (location != null) {
 
-                        double lat = location.getLatitude();
-                        double lng = location.getLongitude();
+                        originLatLng = new LatLng(
+                                location.getLatitude(),
+                                location.getLongitude()
+                        );
 
-                        Log.d(TAG, "POSITION ACTUELLE: " + lat + ", " + lng);
+                        mMap.animateCamera(
+                                CameraUpdateFactory.newLatLngZoom(
+                                        originLatLng,
+                                        14
+                                )
+                        );
 
-                        originLatLng = new LatLng(lat, lng);
-
-                        // Effet de notre caméra
-                        mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(originLatLng, 14));
-
-                        Toast.makeText(getContext(),
-                                "Position récupérée",
-                                Toast.LENGTH_SHORT).show();
-
-                    } else {
-                        Log.e(TAG, "Localisation null");
+                        Log.d(
+                                TAG,
+                                "Position utilisateur récupérée"
+                        );
                     }
                 });
     }
 
-    private void checkLocationPermission() {
-        if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_FINE_LOCATION)
-                == PackageManager.PERMISSION_GRANTED) {
-            mMap.setMyLocationEnabled(true);
+    private void calculerTousLesItineraires() {
+
+        String depart =
+                etDepart.getText().toString().trim();
+
+        String arrivee =
+                etArrivee.getText().toString().trim();
+
+        if (arrivee.isEmpty()) {
+
+            Toast.makeText(
+                    getContext(),
+                    "Veuillez saisir une destination",
+                    Toast.LENGTH_SHORT
+            ).show();
+
+            return;
+        }
+
+        if (depart.isEmpty()) {
+
+            if (
+                    ActivityCompat.checkSelfPermission(
+                            requireContext(),
+                            Manifest.permission.ACCESS_FINE_LOCATION
+                    ) != PackageManager.PERMISSION_GRANTED
+            ) {
+                return;
+            }
+
+            fusedLocationClient
+                    .getLastLocation()
+                    .addOnSuccessListener(location -> {
+
+                        if (location == null) {
+
+                            Toast.makeText(
+                                    getContext(),
+                                    "Impossible de récupérer votre position",
+                                    Toast.LENGTH_SHORT
+                            ).show();
+
+                            return;
+                        }
+
+                        originLatLng = new LatLng(
+                                location.getLatitude(),
+                                location.getLongitude()
+                        );
+
+                        lancerCalcul(arrivee);
+                    });
+
         } else {
-            requestPermissions(new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, 1);
+
+            originLatLng =
+                    getLocationFromAddress(depart);
+
+            lancerCalcul(arrivee);
         }
     }
 
-    private void calculerTousLesItineraires() {
+    private void lancerCalcul(String arrivee) {
 
-        String depart = etDepart.getText().toString();
-        String arrivee = etArrivee.getText().toString();
-
-        if (depart.isEmpty()) {
-            getCurrentLocation();
-        } else {
-            originLatLng = getLocationFromAddress(depart);
-        }
-        destLatLng = getLocationFromAddress(arrivee);
+        destLatLng =
+                getLocationFromAddress(arrivee);
 
         if (originLatLng == null || destLatLng == null) {
-            Toast.makeText(getContext(), "Adresse invalide", Toast.LENGTH_SHORT).show();
+
+            Toast.makeText(
+                    getContext(),
+                    "Adresse invalide",
+                    Toast.LENGTH_SHORT
+            ).show();
+
             return;
         }
 
         completedRequests = 0;
+
         userRoutesLoaded = false;
+
         allRoutes.clear();
 
-        String[] modes = {"transit", "driving", "walking", "bicycling"};
+        String[] modes = {
+                "transit",
+                "walking",
+                "bicycling",
+                "driving"
+        };
 
         for (String mode : modes) {
             fetchRoute(mode);
-            Log.d(TAG, "Départ: " + depart);
-            Log.d(TAG, "Arrivée: " + arrivee);
-            Log.d(TAG, "Origin: " + originLatLng);
-            Log.d(TAG, "Destination: " + destLatLng);
         }
+
         loadUserSuggestedRoutes();
-    }
-    private void tryFinishLoadingRoutes() {
-        if (completedRequests == 4 && userRoutesLoaded) {
-            Log.d(TAG, "TOTAL ROUTES RECUPEREES: " + allRoutes.size());
-            filtrerRoutes();
-        }
     }
 
     private void fetchRoute(String mode) {
-        String url = "https://maps.googleapis.com/maps/api/directions/json?"
-                + "origin=" + originLatLng.latitude + "," + originLatLng.longitude
-                + "&destination=" + destLatLng.latitude + "," + destLatLng.longitude
-                + "&mode=" + mode
-                + "&alternatives=true"
-                + (mode.equals("transit") ? "&departure_time=now" : "")
-                + "&key=" + API_KEY;
+
+        String url =
+                "https://maps.googleapis.com/maps/api/directions/json?"
+                        + "origin="
+                        + originLatLng.latitude
+                        + ","
+                        + originLatLng.longitude
+                        + "&destination="
+                        + destLatLng.latitude
+                        + ","
+                        + destLatLng.longitude
+                        + "&mode="
+                        + mode
+                        + "&alternatives=true"
+                        + (mode.equals("transit")
+                        ? "&departure_time=now"
+                        : "")
+                        + "&key="
+                        + API_KEY;
 
         new Thread(() -> {
-            try {
-                Log.d(TAG, "====================");
-                Log.d(TAG, "MODE: " + mode);
-                Log.d(TAG, "URL: " + url);
 
-                HttpURLConnection conn = (HttpURLConnection) new URL(url).openConnection();
+            try {
+
+                Log.d(TAG, "URL = " + url);
+
+                HttpURLConnection conn =
+                        (HttpURLConnection)
+                                new URL(url).openConnection();
+
                 conn.connect();
 
-                BufferedReader reader = new BufferedReader(new InputStreamReader(conn.getInputStream()));
-                StringBuilder json = new StringBuilder();
+                int responseCode =
+                        conn.getResponseCode();
+
+                Log.d(
+                        TAG,
+                        "HTTP CODE = " + responseCode
+                );
+
+                BufferedReader reader =
+                        new BufferedReader(
+                                new InputStreamReader(
+                                        conn.getInputStream()
+                                )
+                        );
+
+                StringBuilder json =
+                        new StringBuilder();
+
                 String line;
 
                 while ((line = reader.readLine()) != null) {
                     json.append(line);
                 }
 
-                // LOG JSON COMPLET
-                Log.d(TAG, "JSON RESPONSE: " + json.toString());
+                JSONObject data =
+                        new JSONObject(json.toString());
 
-                JSONObject data = new JSONObject(json.toString());
-                String status = data.getString("status");
+                String status =
+                        data.getString("status");
 
-                Log.d(TAG, "STATUS API: " + status);
+                Log.d(TAG, "STATUS = " + status);
 
-                if (status.equals("OK")) {
+                if (!status.equals("OK")) {
+                    return;
+                }
 
-                    JSONArray routes = data.getJSONArray("routes");
-                    Log.d(TAG, "NB ROUTES: " + routes.length());
+                JSONArray routes =
+                        data.getJSONArray("routes");
 
-                    for (int i = 0; i < routes.length(); i++) {
+                for (int i = 0; i < routes.length(); i++) {
 
-                        JSONObject route = routes.getJSONObject(i);
-                        JSONObject leg = route.getJSONArray("legs").getJSONObject(0);
+                    JSONObject route =
+                            routes.getJSONObject(i);
 
-                        String duration = leg.getJSONObject("duration").getString("text");
-                        String distance = leg.getJSONObject("distance").getString("text");
+                    JSONObject leg =
+                            route.getJSONArray("legs")
+                                    .getJSONObject(0);
 
-                        Log.d(TAG, "Route " + i + " -> " + duration + " | " + distance);
+                    String duration =
+                            leg.getJSONObject("duration")
+                                    .getString("text");
 
-                        String polyline = route.getJSONObject("overview_polyline").getString("points");
-                        List<LatLng> points = decodePolyline(polyline);
+                    String distance =
+                            leg.getJSONObject("distance")
+                                    .getString("text");
 
-                        RouteOption r = new RouteOption(mode, duration, distance, "", points);
+                    String polyline =
+                            route.getJSONObject(
+                                            "overview_polyline"
+                                    )
+                                    .getString("points");
 
-                        List<RouteStep> steps = extractSteps(leg, mode);
-                        r.setSteps(steps);
+                    List<LatLng> points =
+                            decodePolyline(polyline);
 
-                        if (mode.equals("transit")) {
-                            int transfers = countTransfers(leg);
-                            r.setNumberOfTransfers(transfers);
+                    RouteOption option =
+                            new RouteOption(
+                                    mode,
+                                    duration,
+                                    distance,
+                                    "",
+                                    points
+                            );
 
-                            if (leg.has("fare")) {
-                                String fare = leg.getJSONObject("fare").getString("text");
-                                r.setPrice(fare);
-                            }
-                        }
-
-                        synchronized (allRoutes) {
-                            allRoutes.add(r);
-                        }
+                    synchronized (allRoutes) {
+                        allRoutes.add(option);
                     }
-
-                } else {
-                    Log.e(TAG, " ERREUR API: " + status);
                 }
 
             } catch (Exception e) {
-                Log.e(TAG, " ERREUR RESEAU", e);
+
+                Log.e(TAG, "Erreur route", e);
+
             } finally {
+
                 requireActivity().runOnUiThread(() -> {
+
                     completedRequests++;
-                    Log.d(TAG, "REQUÊTES FINIES: " + completedRequests + "/4");
+
                     tryFinishLoadingRoutes();
                 });
             }
+
         }).start();
     }
-    private List<RouteStep> extractSteps(JSONObject leg, String mode) throws Exception {
-        List<RouteStep> steps = new ArrayList<>();
-        JSONArray stepsArray = leg.getJSONArray("steps");
 
-        for (int i = 0; i < stepsArray.length(); i++) {
-            JSONObject stepObj = stepsArray.getJSONObject(i);
-            String travelMode = stepObj.getString("travel_mode");
-            String instructions = stepObj.getString("html_instructions").replaceAll("<[^>]*>", "");
-            String stepDuration = stepObj.getJSONObject("duration").getString("text");
+    private void tryFinishLoadingRoutes() {
 
-            if (travelMode.equals("TRANSIT")) {
-                JSONObject transitDetails = stepObj.getJSONObject("transit_details");
-                JSONObject line = transitDetails.getJSONObject("line");
+        Log.d(
+                TAG,
+                "completedRequests = "
+                        + completedRequests
+        );
 
-                String lineName = line.optString("short_name", line.getString("name"));
-                String headsign = transitDetails.getString("headsign");
-                String departureStop = transitDetails.getJSONObject("departure_stop").getString("name");
-                String arrivalStop = transitDetails.getJSONObject("arrival_stop").getString("name");
-                int numStops = transitDetails.getInt("num_stops");
-                String vehicleType = line.getJSONObject("vehicle").getString("type");
-                String lineColor = line.optString("color", "8ED38A");
+        Log.d(
+                TAG,
+                "userRoutesLoaded = "
+                        + userRoutesLoaded
+        );
 
-                String title = lineName + " - Direction " + headsign;
-                String details = departureStop + " → " + arrivalStop + " (" + numStops + " arrêts)";
+        Log.d(
+                TAG,
+                "allRoutes size = "
+                        + allRoutes.size()
+        );
 
-                RouteStep step = new RouteStep("TRANSIT", title, details, stepDuration);
-                step.setLineName(lineName);
-                step.setLineColor(lineColor);
-                step.setVehicleType(vehicleType);
+        if (completedRequests == 4 && userRoutesLoaded) {
 
-                steps.add(step);
-
-            } else if (travelMode.equals("WALKING")) {
-                RouteStep step = new RouteStep("WALKING", "Marche à pied", instructions, stepDuration);
-                steps.add(step);
-            }
-        }
-
-        return steps;
-    }
-
-    // COMPTER LES CORRESPONDANCES
-    private int countTransfers(JSONObject leg) throws Exception {
-        JSONArray steps = leg.getJSONArray("steps");
-        int transitCount = 0;
-
-        for (int i = 0; i < steps.length(); i++) {
-            if (steps.getJSONObject(i).getString("travel_mode").equals("TRANSIT")) {
-                transitCount++;
-            }
-        }
-
-        return Math.max(0, transitCount - 1);
-    }
-    private int parseDuration(String duration) {
-        try {
-            int total = 0;
-
-            if (duration.contains("hour")) {
-                String[] parts = duration.split("hour");
-                total += Integer.parseInt(parts[0].trim()) * 60;
-
-                if (parts.length > 1 && parts[1].contains("min")) {
-                    String mins = parts[1].replaceAll("[^0-9]", "");
-                    if (!mins.isEmpty()) {
-                        total += Integer.parseInt(mins);
-                    }
-                }
-            } else if (duration.contains("min")) {
-                String mins = duration.replaceAll("[^0-9]", "");
-                total = Integer.parseInt(mins);
-            }
-
-            return total;
-
-        } catch (Exception e) {
-            return 9999;
+            filtrerRoutes();
         }
     }
 
     private void filtrerRoutes() {
 
-        List<RouteOption> filtered = new ArrayList<>();
+        List<RouteOption> filtered =
+                new ArrayList<>();
 
-        for (RouteOption r : allRoutes) {
-            if (r.getMode().equals(travelMode)) {
-                filtered.add(r);
-            } else if (r.getMode().equals("user")) {
-                String communityMode = r.getCommunityMode();
+        for (RouteOption route : allRoutes) {
 
-                if (communityMode == null || communityMode.trim().isEmpty()) {
-                    communityMode = "walking";
-                }
+            if (route.getMode().equals("user")) {
 
-                if (communityMode.equals(travelMode)) {
-                    filtered.add(r);
-                }
+                filtered.add(route);
+
+            } else if (
+                    route.getMode().equals(travelMode)
+            ) {
+
+                filtered.add(route);
             }
         }
 
+        Log.d(
+                TAG,
+                "ROUTES FILTREES = "
+                        + filtered.size()
+        );
+
         if (filtered.isEmpty()) {
-            Toast.makeText(getContext(), "Aucun trajet trouvé", Toast.LENGTH_SHORT).show();
+
+            Toast.makeText(
+                    getContext(),
+                    "Aucune route trouvée",
+                    Toast.LENGTH_SHORT
+            ).show();
+
             return;
         }
 
-        Collections.sort(filtered, (r1, r2) -> {
-            if (r1.getMode().equals("user") && !r2.getMode().equals("user")) {
-                return -1;
-            }
+        Collections.sort(
+                filtered,
+                (r1, r2) ->
+                        parseDuration(r1.getDuration())
+                                - parseDuration(r2.getDuration())
+        );
 
-            if (!r1.getMode().equals("user") && r2.getMode().equals("user")) {
-                return 1;
-            }
+        adapter =
+                new RouteOptionsAdapter(
+                        filtered,
+                        this::afficherRoute
+                );
 
-            return parseDuration(r1.getDuration()) - parseDuration(r2.getDuration());
-        });
-
-        if (filtered.size() > 5) {
-            filtered = filtered.subList(0, 5);
-        }
-
-        adapter = new RouteOptionsAdapter(filtered, this::afficherRoute);
         rvTousItineraires.setAdapter(adapter);
-
 
         afficherRoute(filtered.get(0));
     }
@@ -506,281 +631,392 @@ public class CarteFragment extends Fragment implements OnMapReadyCallback {
     private void afficherRoute(RouteOption route) {
 
         mMap.clear();
-        if (route.getMode().equals("user")) {
-            incrementUserRouteUsage(route);
-        }
 
         int color;
 
         switch (route.getMode()) {
+
             case "transit":
                 color = Color.parseColor("#4CAF50");
                 break;
+
             case "walking":
                 color = Color.parseColor("#FF9800");
                 break;
+
             case "bicycling":
                 color = Color.parseColor("#2196F3");
                 break;
+
             case "driving":
                 color = Color.parseColor("#F44336");
                 break;
+
             case "user":
-                color = Color.parseColor("#3FA34D");
+                color = Color.parseColor("#8E24AA");
                 break;
+
             default:
                 color = Color.BLUE;
         }
 
-        PolylineOptions polylineOptions = new PolylineOptions()
-                .addAll(route.getPolylinePoints())
-                .width(12)
-                .color(color);
+        PolylineOptions options =
+                new PolylineOptions()
+                        .addAll(route.getPolylinePoints())
+                        .width(12)
+                        .color(color);
 
         if (route.getMode().equals("user")) {
-            polylineOptions.pattern(Arrays.asList(new Dash(25), new Gap(16)));
+
+            List<PatternItem> pattern =
+                    new ArrayList<>();
+
+            pattern.add(new Dash(30));
+            pattern.add(new Gap(20));
+
+            options.pattern(pattern);
         }
 
-        currentPolyline = mMap.addPolyline(polylineOptions);
+        currentPolyline =
+                mMap.addPolyline(options);
 
-        LatLng markerStart = route.getMode().equals("user")
-                ? route.getPolylinePoints().get(0)
-                : originLatLng;
+        List<LatLng> points =
+                route.getPolylinePoints();
 
-        LatLng markerEnd = route.getMode().equals("user")
-                ? route.getPolylinePoints().get(route.getPolylinePoints().size() - 1)
-                : destLatLng;
-
-        mMap.addMarker(new MarkerOptions().position(markerStart).title("Départ"));
-        mMap.addMarker(new MarkerOptions().position(markerEnd).title("Arrivée"));
-
-        LatLngBounds.Builder builder = new LatLngBounds.Builder();
-
-        for (LatLng p : route.getPolylinePoints()) {
-            builder.include(p);
+        if (points.isEmpty()) {
+            return;
         }
 
-        mMap.animateCamera(CameraUpdateFactory.newLatLngBounds(builder.build(), 150));
+        mMap.addMarker(
+                new MarkerOptions()
+                        .position(points.get(0))
+                        .title("Départ")
+        );
 
-        Toast.makeText(getContext(),
-                route.getMode() + " • " + route.getDuration(),
-                Toast.LENGTH_SHORT).show();
+        mMap.addMarker(
+                new MarkerOptions()
+                        .position(points.get(points.size() - 1))
+                        .title("Arrivée")
+        );
+
+        LatLngBounds.Builder builder =
+                new LatLngBounds.Builder();
+
+        for (LatLng point : points) {
+            builder.include(point);
+        }
+
+        mMap.animateCamera(
+                CameraUpdateFactory.newLatLngBounds(
+                        builder.build(),
+                        150
+                )
+        );
+    }
+
+    private void fetchAddressSuggestionsOSM(
+            String query,
+            ArrayAdapter<String> adapter
+    ) {
+
+        String url =
+                "https://nominatim.openstreetmap.org/search?q="
+                        + query.replace(" ", "%20")
+                        + "&format=json&limit=10";
+
+        new Thread(() -> {
+
+            try {
+
+                HttpURLConnection conn =
+                        (HttpURLConnection)
+                                new URL(url).openConnection();
+
+                conn.setRequestProperty(
+                        "User-Agent",
+                        "Android-App"
+                );
+
+                conn.connect();
+
+                BufferedReader reader =
+                        new BufferedReader(
+                                new InputStreamReader(
+                                        conn.getInputStream()
+                                )
+                        );
+
+                StringBuilder json =
+                        new StringBuilder();
+
+                String line;
+
+                while ((line = reader.readLine()) != null) {
+                    json.append(line);
+                }
+
+                JSONArray results =
+                        new JSONArray(json.toString());
+
+                List<String> suggestions =
+                        new ArrayList<>();
+
+                for (int i = 0; i < results.length(); i++) {
+
+                    JSONObject obj =
+                            results.getJSONObject(i);
+
+                    suggestions.add(
+                            obj.getString("display_name")
+                    );
+                }
+
+                requireActivity().runOnUiThread(() -> {
+
+                    adapter.clear();
+
+                    adapter.addAll(suggestions);
+
+                    adapter.notifyDataSetChanged();
+                });
+
+            } catch (Exception e) {
+
+                Log.e(TAG, "Erreur OSM", e);
+            }
+
+        }).start();
     }
 
     private LatLng getLocationFromAddress(String address) {
-        try {
-            Geocoder geocoder = new Geocoder(requireContext());
-            List<Address> list = geocoder.getFromLocationName(address, 1);
 
-            if (!list.isEmpty()) {
-                Address loc = list.get(0);
-                return new LatLng(loc.getLatitude(), loc.getLongitude());
+        try {
+
+            Geocoder geocoder =
+                    new Geocoder(requireContext());
+
+            List<Address> addresses =
+                    geocoder.getFromLocationName(
+                            address,
+                            1
+                    );
+
+            if (
+                    addresses != null
+                            && !addresses.isEmpty()
+            ) {
+
+                Address a = addresses.get(0);
+
+                return new LatLng(
+                        a.getLatitude(),
+                        a.getLongitude()
+                );
             }
-        } catch (Exception ignored) {}
+
+        } catch (Exception e) {
+
+            Log.e(TAG, "Erreur geocoder", e);
+        }
 
         return null;
+    }
+
+    private int parseDuration(String duration) {
+
+        try {
+
+            int total = 0;
+
+            if (duration.contains("hour")) {
+
+                String[] parts =
+                        duration.split("hour");
+
+                total +=
+                        Integer.parseInt(
+                                parts[0].trim()
+                        ) * 60;
+
+                if (
+                        parts.length > 1
+                                && parts[1].contains("min")
+                ) {
+
+                    String mins =
+                            parts[1].replaceAll(
+                                    "[^0-9]",
+                                    ""
+                            );
+
+                    if (!mins.isEmpty()) {
+                        total += Integer.parseInt(mins);
+                    }
+                }
+
+            } else if (duration.contains("min")) {
+
+                total =
+                        Integer.parseInt(
+                                duration.replaceAll(
+                                        "[^0-9]",
+                                        ""
+                                )
+                        );
+            }
+
+            return total;
+
+        } catch (Exception e) {
+
+            return 9999;
+        }
     }
 
     private List<LatLng> decodePolyline(String encoded) {
 
         List<LatLng> poly = new ArrayList<>();
-        int index = 0, lat = 0, lng = 0;
+
+        int index = 0;
+        int lat = 0;
+        int lng = 0;
 
         while (index < encoded.length()) {
 
-            int b, shift = 0, result = 0;
+            int b;
+            int shift = 0;
+            int result = 0;
 
             do {
+
                 b = encoded.charAt(index++) - 63;
+
                 result |= (b & 0x1f) << shift;
+
                 shift += 5;
+
             } while (b >= 0x20);
 
-            lat += ((result & 1) != 0 ? ~(result >> 1) : (result >> 1));
+            lat +=
+                    ((result & 1) != 0
+                            ? ~(result >> 1)
+                            : (result >> 1));
 
             shift = 0;
+
             result = 0;
 
             do {
+
                 b = encoded.charAt(index++) - 63;
+
                 result |= (b & 0x1f) << shift;
+
                 shift += 5;
+
             } while (b >= 0x20);
 
-            lng += ((result & 1) != 0 ? ~(result >> 1) : (result >> 1));
+            lng +=
+                    ((result & 1) != 0
+                            ? ~(result >> 1)
+                            : (result >> 1));
 
-            poly.add(new LatLng(lat / 1E5, lng / 1E5));
+            poly.add(
+                    new LatLng(
+                            lat / 1E5,
+                            lng / 1E5
+                    )
+            );
         }
 
         return poly;
     }
-    @SuppressWarnings("unchecked")
+
     private void loadUserSuggestedRoutes() {
-        if (originLatLng == null || destLatLng == null) {
-            userRoutesLoaded = true;
-            tryFinishLoadingRoutes();
-            return;
-        }
 
         db.collection("itineraires_utilisateurs")
-                .whereEqualTo("status", "active")
                 .get()
-                .addOnSuccessListener(queryDocumentSnapshots -> {
+                .addOnSuccessListener(documents -> {
 
-                    for (DocumentSnapshot document : queryDocumentSnapshots) {
+                    for (DocumentSnapshot doc : documents) {
 
-                        Double startLat = document.getDouble("startLat");
-                        Double startLng = document.getDouble("startLng");
-                        Double endLat = document.getDouble("endLat");
-                        Double endLng = document.getDouble("endLng");
+                        try {
 
-                        if (startLat == null || startLng == null || endLat == null || endLng == null) {
-                            continue;
-                        }
+                            List<Map<String, Object>> rawPoints =
+                                    (List<Map<String, Object>>)
+                                            doc.get("points");
 
-                        LatLng routeStart = new LatLng(startLat, startLng);
-                        LatLng routeEnd = new LatLng(endLat, endLng);
-
-                        float distanceStart = distanceBetween(originLatLng, routeStart);
-                        float distanceEnd = distanceBetween(destLatLng, routeEnd);
-
-                        // MVP: route communauté nếu điểm đầu/cuối gần điểm user tìm
-                        boolean isNearSearch =
-                                distanceStart <= 700 &&
-                                        distanceEnd <= 700;
-
-                        if (!isNearSearch) {
-                            continue;
-                        }
-
-                        List<Map<String, Object>> pointsFirebase =
-                                (List<Map<String, Object>>) document.get("points");
-
-                        if (pointsFirebase == null || pointsFirebase.size() < 2) {
-                            continue;
-                        }
-
-                        List<LatLng> points = new ArrayList<>();
-
-                        for (Map<String, Object> pointMap : pointsFirebase) {
-                            Object latObj = pointMap.get("lat");
-                            Object lngObj = pointMap.get("lng");
-
-                            if (latObj instanceof Number && lngObj instanceof Number) {
-                                double lat = ((Number) latObj).doubleValue();
-                                double lng = ((Number) lngObj).doubleValue();
-
-                                points.add(new LatLng(lat, lng));
+                            if (
+                                    rawPoints == null
+                                            || rawPoints.size() < 2
+                            ) {
+                                continue;
                             }
+
+                            List<LatLng> points =
+                                    new ArrayList<>();
+
+                            for (Map<String, Object> map : rawPoints) {
+
+                                double lat =
+                                        ((Number) map.get("lat"))
+                                                .doubleValue();
+
+                                double lng =
+                                        ((Number) map.get("lng"))
+                                                .doubleValue();
+
+                                points.add(
+                                        new LatLng(lat, lng)
+                                );
+                            }
+
+                            RouteOption route =
+                                    new RouteOption(
+                                            "user",
+                                            "Communauté",
+                                            "0 km",
+                                            "Itinéraire utilisateur",
+                                            points
+                                    );
+
+                            allRoutes.add(route);
+
+                        } catch (Exception e) {
+
+                            Log.e(
+                                    TAG,
+                                    "Erreur route user",
+                                    e
+                            );
                         }
-
-                        if (points.size() < 2) {
-                            continue;
-                        }
-
-                        String title = document.getString("title");
-                        String duration = document.getString("duration");
-                        String distance = document.getString("distance");
-
-                        if (title == null || title.trim().isEmpty()) {
-                            title = "Proposition utilisateur";
-                        }
-
-                        if (duration == null || duration.trim().isEmpty()) {
-                            duration = "Durée inconnue";
-                        }
-
-                        if (distance == null || distance.trim().isEmpty()) {
-                            distance = calculateDistanceText(points);
-                        }
-
-                        String communityMode = document.getString("mode");
-
-                        if (communityMode == null || communityMode.trim().isEmpty()) {
-                            communityMode = "walking";
-                        }
-
-                        RouteOption userRoute = new RouteOption(
-                                "user",
-                                duration,
-                                distance,
-                                title,
-                                points
-                        );
-
-                        userRoute.setDocumentId(document.getId());
-                        userRoute.setCommunityMode(communityMode);
-
-                        synchronized (allRoutes) {
-                            allRoutes.add(userRoute);
-                        }
-
-                        Log.d(TAG, "Route communauté ajoutée : " + title);
                     }
 
                     userRoutesLoaded = true;
+
                     tryFinishLoadingRoutes();
                 })
                 .addOnFailureListener(e -> {
-                    Log.e(TAG, "Erreur chargement itinéraires utilisateurs", e);
 
                     userRoutesLoaded = true;
+
                     tryFinishLoadingRoutes();
                 });
     }
-    private float distanceBetween(LatLng p1, LatLng p2) {
-        float[] results = new float[1];
-
-        android.location.Location.distanceBetween(
-                p1.latitude,
-                p1.longitude,
-                p2.latitude,
-                p2.longitude,
-                results
-        );
-
-        return results[0];
-    }
-    private String calculateDistanceText(List<LatLng> points) {
-        if (points == null || points.size() < 2) {
-            return "0 m";
-        }
-
-        float total = 0;
-
-        for (int i = 1; i < points.size(); i++) {
-            total += distanceBetween(points.get(i - 1), points.get(i));
-        }
-
-        if (total < 1000) {
-            return Math.round(total) + " m";
-        }
-
-        return String.format(Locale.FRANCE, "%.1f km", total / 1000);
-    }
-    private void incrementUserRouteUsage(RouteOption route) {
-        if (route.getDocumentId() == null || route.getDocumentId().trim().isEmpty()) {
-            return;
-        }
-
-        db.collection("itineraires_utilisateurs")
-                .document(route.getDocumentId())
-                .update("usageCount", FieldValue.increment(1))
-                .addOnSuccessListener(unused ->
-                        Log.d(TAG, "usageCount augmenté pour route communauté")
-                )
-                .addOnFailureListener(e ->
-                        Log.e(TAG, "Erreur update usageCount", e)
-                );
-    }
 }
-// Classe utilitaire pour éviter de réécrire les méthodes inutiles
-abstract class SimpleTextWatcher implements android.text.TextWatcher {
+
+abstract class SimpleTextWatcher implements TextWatcher {
 
     @Override
-    public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+    public void beforeTextChanged(
+            CharSequence s,
+            int start,
+            int count,
+            int after
+    ) {
+    }
 
     @Override
-    public void afterTextChanged(android.text.Editable s) {}
-
+    public void afterTextChanged(Editable s) {
+    }
 }
