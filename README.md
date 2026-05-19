@@ -179,3 +179,185 @@ Avant de lancer le projet, il faut installer :
 ```bash
 git clone https://gitlab.com/Rsainta/votre-projet.git
 cd votre-projet
+```
+
+### Ouvrir le projet
+
+1. Ouvrir Android Studio.
+2. Sélectionner **Open**.
+3. Choisir le dossier du projet.
+4. Attendre la synchronisation Gradle.
+5. Lancer l’application sur un émulateur ou un appareil Android.
+
+### Lancer depuis le terminal
+
+```bash
+./gradlew assembleDebug
+```
+
+Sous Windows :
+
+```bash
+gradlew.bat assembleDebug
+```
+
+---
+
+## Configuration Firebase et Google Maps
+
+### Firebase
+
+Pour utiliser Firebase Authentication et Firestore :
+
+1. Créer un projet sur Firebase Console.
+2. Ajouter une application Android avec le package :
+
+```text
+com.example.projet_tutore
+```
+
+3. Télécharger le fichier `google-services.json`.
+4. Placer ce fichier dans le dossier :
+
+```text
+app/google-services.json
+```
+
+5. Activer dans Firebase :
+   - Authentication ;
+   - Firestore Database.
+
+### Google Maps
+
+Pour utiliser Google Maps et Google Directions :
+
+1. Créer une clé API Google Cloud.
+2. Activer les API nécessaires :
+   - Maps SDK for Android ;
+   - Directions API ;
+   - Geocoding API si nécessaire.
+3. Ajouter la clé dans un fichier local non partagé, par exemple :
+
+```properties
+MAPS_API_KEY=YOUR_GOOGLE_MAPS_API_KEY
+```
+
+> Important : ne jamais publier de vraie clé API dans le dépôt Git. Les clés doivent être stockées localement et protégées par `.gitignore`.
+
+---
+
+## Structure du projet
+
+```text
+votre-projet/
+├── app/
+│   ├── build.gradle.kts
+│   ├── google-services.json
+│   ├── src/
+│   │   ├── main/
+│   │   │   ├── AndroidManifest.xml
+│   │   │   ├── java/com/example/projet_tutore/
+│   │   │   │   ├── AccueilFragment.java
+│   │   │   │   ├── LoginActivity.java
+│   │   │   │   ├── InscriptionActivity.java
+│   │   │   │   ├── MainActivity.java
+│   │   │   │   ├── PartageFragment.java
+│   │   │   │   ├── ResultatCovoiturageFragment.java
+│   │   │   │   ├── PaiementCovoiturageFragment.java
+│   │   │   │   ├── MapPickerFragment.java
+│   │   │   │   ├── DrivingRouteFragment.java
+│   │   │   │   ├── ProfilFragment.java
+│   │   │   │   └── SessionManager.java
+│   │   │   └── res/
+│   │   │       ├── drawable/
+│   │   │       ├── layout/
+│   │   │       ├── menu/
+│   │   │       ├── navigation/
+│   │   │       └── values/
+├── build.gradle.kts
+├── settings.gradle.kts
+├── gradle.properties
+└── README.md
+```
+
+---
+
+## Dimension business
+
+Le projet ne se limite pas au développement technique. Il comprend également une réflexion autour de la viabilité du service.
+
+### Modèle économique
+
+Le modèle économique envisagé repose sur plusieurs pistes :
+
+- commission légère sur certaines réservations ;
+- partenariats avec des établissements universitaires ou entreprises ;
+- mise en avant de services liés à la mobilité durable ;
+- modèle freemium pour certaines fonctionnalités avancées.
+
+### Plan de financement initial
+
+Le plan de financement initial prend en compte :
+
+- les frais de développement ;
+- les coûts liés aux services Firebase et Google Maps ;
+- la communication de lancement ;
+- les tests utilisateurs ;
+- les frais administratifs et divers.
+
+### Stratégie de lancement
+
+La stratégie de lancement peut s’appuyer sur :
+
+- un lancement ciblé auprès des étudiants ;
+- une phase de test sur un campus universitaire ;
+- une communication via les associations étudiantes ;
+- des partenariats avec des écoles, universités ou entreprises ;
+- une amélioration progressive de l’application à partir des retours utilisateurs.
+
+---
+
+## Améliorations possibles
+
+Plusieurs améliorations pourraient être ajoutées dans les prochaines versions :
+
+- messagerie entre conducteur et passager ;
+- notation des utilisateurs ;
+- système de notifications ;
+- paiement réel sécurisé ;
+- optimisation de la recherche de trajets ;
+- calcul plus précis de l’impact écologique ;
+- tableau de bord personnalisé ;
+- meilleure gestion des erreurs réseau ;
+- internationalisation de l’application.
+
+---
+
+## Sécurité
+
+Certaines informations sensibles doivent être protégées :
+
+- clés Google Maps API ;
+- fichiers de configuration Firebase ;
+- identifiants ou secrets d’environnement.
+
+Il est recommandé d’utiliser un fichier local ignoré par Git pour stocker les clés API et de restreindre les clés depuis Google Cloud Console.
+
+---
+
+## Auteurs
+
+Projet réalisé dans le cadre d’un projet tutoré universitaire.
+
+Équipe :
+
+- Yumeng Yang
+- Reginald Saint Aubin
+- Francesca Jiang
+- Autres membres du groupe à compléter
+
+---
+
+## Licence
+
+Ce projet est réalisé dans un cadre académique. La licence peut être précisée selon les choix de l’équipe.
